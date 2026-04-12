@@ -1,0 +1,17 @@
+from guidian.models.models import (  # noqa: F401
+    UserRole,
+    Organization,
+    User,
+    Course,
+    Module,
+    Lesson,
+    LearnerProfile,
+    Enrollment,
+    LessonProgress,
+    QuizAttempt,
+    ComplianceAuditLog,
+    Certificate,
+    CEURule,
+    XAPIStatement,
+    AIGenerationJob,
+)

@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  api:
+    name: API — lint & migrate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: guidian
+          POSTGRES_PASSWORD: guidian
+          POSTGRES_DB: guidian
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U guidian"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://guidian:guidian@localhost:5432/guidian
+      SYNC_DATABASE_URL: postgresql+psycopg://guidian:guidian@localhost:5432/guidian
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      CELERY_RESULT_BACKEND: redis://localhost:6379/2
+      JWT_SECRET_KEY: ci-secret-not-for-prod
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: api/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff mypy
+
+      - name: Ruff lint
+        run: ruff check guidian
+
+      - name: Ruff format check
+        run: ruff format --check guidian
+
+      - name: Import check (catches syntax / circular imports)
+        run: python -c "import guidian.main; import guidian.workers.celery_app"
+
+      - name: Alembic upgrade head
+        run: alembic upgrade head
+
+      - name: Alembic downgrade base (round-trip)
+        run: alembic downgrade base
+
+      - name: Alembic upgrade head again
+        run: alembic upgrade head
+
+  web:
+    name: Web — lint, typecheck, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci || npm install
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build

@@ -1,0 +1,84 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: guidian
+      POSTGRES_PASSWORD: guidian
+      POSTGRES_DB: guidian
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guidian"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: guidian
+      MINIO_ROOT_PASSWORD: guidian-dev-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  api:
+    build:
+      context: ./api
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+    command: uvicorn guidian.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: ./api
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./api:/app
+    command: celery -A guidian.workers.celery_app.celery_app worker --loglevel=info
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    env_file: .env
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/app
+    command: sh -c "echo 'web scaffold placeholder — run next dev when web/ is initialized' && tail -f /dev/null"
+
+volumes:
+  pgdata:
+  miniodata:
