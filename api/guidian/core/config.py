@@ -59,8 +59,13 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str | None = None
     ANTHROPIC_MODEL: str = "claude-opus-4-6"
     OPENAI_API_KEY: str | None = None
-    TTS_PROVIDER: str = "openai"
+    TTS_PROVIDER: str = "elevenlabs"
     TTS_VOICE: str = "alloy"
+    ELEVENLABS_API_KEY: str | None = None
+    ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # Rachel — clear professional narration
+    OPENAI_IMAGE_MODEL: str = "dall-e-3"
+    OPENAI_IMAGE_SIZE: str = "1024x1024"
+    OPENAI_IMAGE_QUALITY: str = "standard"
 
 
 @lru_cache

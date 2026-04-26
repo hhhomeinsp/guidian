@@ -114,6 +114,7 @@ class Lesson(Base, UUIDMixin, TimestampMixin):
     objectives: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
     mdx_content: Mapped[str] = mapped_column(Text, nullable=False, default="")
     audio_url: Mapped[str | None] = mapped_column(String(1024))
+    image_url: Mapped[str | None] = mapped_column(String(1024))
     diagrams: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)  # [{id, mermaid, url}]
     quiz: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)  # {questions:[...]}
     style_tags: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)  # ["visual","auditory",...]
