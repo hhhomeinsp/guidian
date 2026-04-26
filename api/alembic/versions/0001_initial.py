@@ -20,8 +20,13 @@ def upgrade() -> None:
     op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
-    user_role = postgresql.ENUM("learner", "instructor", "admin", "org_admin", name="user_role")
-    user_role.create(op.get_bind(), checkfirst=True)
+    op.execute("""
+        DO $$$ BEGIN
+            CREATE TYPE user_role AS ENUM ('learner', 'instructor', 'admin', 'org_admin');
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$$;
+    """)
+    user_role = postgresql.ENUM("learner", "instructor", "admin", "org_admin", name="user_role", create_type=False)
 
     op.create_table(
         "organizations",
