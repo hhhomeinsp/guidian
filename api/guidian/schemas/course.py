@@ -95,10 +95,14 @@ class CourseGenerationRequest(BaseModel):
     prompt: str = Field(min_length=10, description="Topic/regulation/objective")
     target_audience: str | None = None
     compliance_requirement: str | None = None
-    ceu_hours: float = Field(ge=0.25, le=40.0, default=1.0)
-    num_modules: int = Field(ge=1, le=20, default=3)
+    ceu_hours: float = Field(ge=0.25, le=200.0, default=1.0)
+    num_modules: int = Field(ge=1, le=60, default=3)
     lessons_per_module: int = Field(ge=1, le=20, default=3)
     accrediting_body: str | None = None
+    use_large_pipeline: bool = Field(
+        default=False,
+        description="Use multi-agent parallel pipeline for courses > 10 CEU hours",
+    )
 
 
 class GenerationJobRead(BaseModel):
@@ -112,6 +116,35 @@ class GenerationJobRead(BaseModel):
 
 
 # --- AI raw course JSON schema (what Claude must return) ---
+
+# Large-course outline specs (Phase 1 — no lesson content, titles + objectives only)
+class AIOutlineLessonSpec(BaseModel):
+    title: str
+    objectives: list[str]
+    clock_minutes: int = 30
+
+
+class AIOutlineModuleSpec(BaseModel):
+    title: str
+    description: str | None = None
+    lessons: list[AIOutlineLessonSpec]
+
+
+class AICourseOutlineSpec(BaseModel):
+    title: str
+    slug: str = Field(pattern=r"^[a-z0-9-]+$")
+    description: str
+    ceu_hours: float
+    accrediting_body: str | None = None
+    modules: list[AIOutlineModuleSpec]
+
+
+class AIModuleValidationResult(BaseModel):
+    passed: bool
+    issues: list[str] = Field(default_factory=list)
+    suggestions: list[str] = Field(default_factory=list)
+
+
 class AILessonSpec(BaseModel):
     title: str
     objectives: list[str]

@@ -2,12 +2,20 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from celery import chord
+from celery import group as celery_group
 from celery.utils.log import get_task_logger
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from guidian.core.config import settings
-from guidian.services.ai.course_generator import CourseGenerationError, run_course_generation
+from guidian.services.ai.course_generator import (
+    CourseGenerationError,
+    finalize_large_course,
+    generate_module_content,
+    run_course_generation,
+    run_large_course_generation,
+)
 from guidian.workers.celery_app import celery_app
 
 logger = get_task_logger(__name__)
@@ -84,7 +92,7 @@ def generate_lesson_images(self, course_id: str) -> None:
     from guidian.models.models import Lesson, Module, Course
     from guidian.services.media.image_gen import generate_and_upload
 
-    logger.info("DALL-E image pipeline starting for course %s", course_id)
+    logger.info("GPT Image pipeline starting for course %s", course_id)
     with SyncSessionLocal() as db:
         lessons = (
             db.execute(
@@ -99,12 +107,105 @@ def generate_lesson_images(self, course_id: str) -> None:
         )
         for lesson in lessons:
             try:
-                key = generate_and_upload(lesson.id, lesson.title, list(lesson.objectives or []))
+                from guidian.services.media.diagram_references import find_reference_url
+                ref_url = find_reference_url(lesson.title, list(lesson.objectives or []))
+                key = generate_and_upload(
+                    lesson.id,
+                    lesson.title,
+                    list(lesson.objectives or []),
+                    reference_url=ref_url,
+                )
                 lesson.image_url = key
                 db.commit()
-                logger.info("Image generated for lesson %s → %s", lesson.id, key)
+                logger.info("Image generated for lesson %s → %s (ref: %s)", lesson.id, key, ref_url or "none")
             except Exception as exc:
                 logger.warning("Image gen failed for lesson %s: %s", lesson.id, exc)
+
+
+@celery_app.task(
+    name="guidian.workers.tasks.generate_large_course",
+    bind=True,
+    autoretry_for=(CourseGenerationError,),
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+    max_retries=2,
+    acks_late=True,
+)
+def generate_large_course(self, job_id: str) -> None:
+    """
+    Phase 1: generate outline + module shells, then fan-out one task per module.
+    All module tasks run in parallel; assemble_large_course fires when all complete.
+    """
+    logger.info("Large-course pipeline starting for job %s", job_id)
+    with SyncSessionLocal() as db:
+        course_id, module_specs = run_large_course_generation(UUID(job_id), db)
+
+    module_tasks = celery_group([
+        generate_and_validate_module.s(
+            job_id,
+            str(module_id),
+            module_outline,
+            course_context,
+        )
+        for module_id, module_outline, course_context in module_specs
+    ])
+    chord(module_tasks)(assemble_large_course.s(job_id, str(course_id)))
+    logger.info(
+        "Dispatched %d parallel module tasks for course %s",
+        len(module_specs),
+        course_id,
+    )
+
+
+@celery_app.task(
+    name="guidian.workers.tasks.generate_and_validate_module",
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=180,
+    max_retries=2,
+    acks_late=True,
+)
+def generate_and_validate_module(
+    self,
+    job_id: str,
+    module_id: str,
+    module_outline: dict,
+    course_context: dict,
+) -> str:
+    """Phase 2+3: write full lesson content for one module, validate, retry once on failure."""
+    logger.info(
+        "Writing module %s (%s) for job %s",
+        module_outline.get("module_index", "?"),
+        module_outline.get("module_title", "?"),
+        job_id,
+    )
+    with SyncSessionLocal() as db:
+        generate_module_content(UUID(module_id), module_outline, course_context, db)
+    logger.info("Module %s complete", module_id)
+    return module_id
+
+
+@celery_app.task(
+    name="guidian.workers.tasks.assemble_large_course",
+    bind=True,
+    acks_late=True,
+)
+def assemble_large_course(self, module_results: list, job_id: str, course_id: str) -> str:
+    """Chord callback: all modules done — mark course published, kick off media generation."""
+    logger.info(
+        "All %d modules complete for course %s, finalizing",
+        len(module_results),
+        course_id,
+    )
+    with SyncSessionLocal() as db:
+        finalize_large_course(UUID(course_id), UUID(job_id), db)
+
+    synthesize_lesson_audio.delay(course_id)
+    generate_lesson_images.delay(course_id)
+    logger.info("Large course %s published, media generation dispatched", course_id)
+    return course_id
 
 
 @celery_app.task(

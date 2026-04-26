@@ -57,15 +57,15 @@ class Settings(BaseSettings):
     S3_REGION: str = "us-east-1"
 
     ANTHROPIC_API_KEY: str | None = None
-    ANTHROPIC_MODEL: str = "claude-opus-4-6"
+    ANTHROPIC_MODEL: str = "claude-opus-4-7"
     OPENAI_API_KEY: str | None = None
     TTS_PROVIDER: str = "elevenlabs"
     TTS_VOICE: str = "alloy"
     ELEVENLABS_API_KEY: str | None = None
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # Rachel — clear professional narration
-    OPENAI_IMAGE_MODEL: str = "dall-e-3"
+    OPENAI_IMAGE_MODEL: str = "gpt-image-1"
     OPENAI_IMAGE_SIZE: str = "1024x1024"
-    OPENAI_IMAGE_QUALITY: str = "standard"
+    OPENAI_IMAGE_QUALITY: str = "medium"
 
 
 @lru_cache

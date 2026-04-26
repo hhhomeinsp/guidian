@@ -21,8 +21,10 @@ async def generate_course(
     db: AsyncSession = Depends(get_db),
     actor: User = Depends(_author_roles()),
 ):
-    # Lazy import so Celery/broker isn't required to import the router at app startup
     from guidian.workers.tasks import generate_course as generate_course_task
+    from guidian.workers.tasks import generate_large_course as generate_large_course_task
+
+    use_large = body.use_large_pipeline or body.ceu_hours > 10
 
     job = AIGenerationJob(
         requested_by=actor.id,
@@ -35,6 +37,7 @@ async def generate_course(
             "lessons_per_module": body.lessons_per_module,
             "accrediting_body": body.accrediting_body,
             "organization_id": str(actor.organization_id) if actor.organization_id else None,
+            "pipeline": "large" if use_large else "standard",
         },
         status="pending",
     )
@@ -42,7 +45,8 @@ async def generate_course(
     await db.commit()
     await db.refresh(job)
 
-    async_result = generate_course_task.delay(str(job.id))
+    task = generate_large_course_task if use_large else generate_course_task
+    async_result = task.delay(str(job.id))
     job.celery_task_id = async_result.id
     await db.commit()
     await db.refresh(job)
