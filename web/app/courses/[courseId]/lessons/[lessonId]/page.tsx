@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   useCourse,
   useLesson,
@@ -12,7 +12,7 @@ import {
   useUpdateLessonProgress,
 } from "@/lib/api/hooks";
 import type { LearningStyle } from "@/lib/api/schema";
-import { AdaptiveRenderer, LessonPage, Quiz } from "@/components/course";
+import { AdaptiveRenderer, LessonPage, Quiz, SlideViewer } from "@/components/course";
 
 export default function LessonPlayerPage({
   params,
@@ -21,6 +21,8 @@ export default function LessonPlayerPage({
 }) {
   const { courseId, lessonId } = params;
   const router = useRouter();
+  // showSlides=true → slide deck; showSlides=false → quiz mode (after slides complete)
+  const [showSlides, setShowSlides] = useState(true);
   const course = useCourse(courseId);
   const lesson = useLesson(lessonId);
   useLessonProgress(lessonId); // prime the cache
@@ -90,12 +92,35 @@ export default function LessonPlayerPage({
     return <main className="container py-12 text-destructive">Failed to load lesson.</main>;
   }
 
+  // --- Slide deck mode ---
+  if (showSlides) {
+    return (
+      <SlideViewer
+        lesson={lesson.data}
+        onComplete={() => {
+          // If there's a quiz, drop into quiz mode. Otherwise complete and navigate.
+          if (hasQuiz) {
+            setShowSlides(false);
+          } else {
+            handleComplete();
+          }
+        }}
+        onBack={
+          prev
+            ? () => router.push(`/courses/${courseId}/lessons/${prev.id}`)
+            : undefined
+        }
+      />
+    );
+  }
+
+  // --- Quiz / post-slides mode ---
   return (
     <LessonPage
       lesson={lesson.data}
       moduleTitle={current?.moduleTitle}
       progressPct={progressPct}
-      onPrev={prev ? () => router.push(`/courses/${courseId}/lessons/${prev.id}`) : undefined}
+      onPrev={() => setShowSlides(true)}
       onNext={canAdvance ? handleComplete : undefined}
       onTick={handleTick}
     >

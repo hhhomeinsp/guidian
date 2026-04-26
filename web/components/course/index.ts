@@ -1,4 +1,7 @@
 export { AdaptiveRenderer } from "./AdaptiveRenderer";
+
+export { SlideViewer } from "./SlideViewer";
+export type { SlideViewerProps } from "./SlideViewer";
 export type { AdaptiveRendererProps } from "./AdaptiveRenderer";
 
 export { CompliancePanel } from "./CompliancePanel";
