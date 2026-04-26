@@ -21,10 +21,10 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
     op.execute("""
-        DO $$$ BEGIN
+        DO $$ BEGIN
             CREATE TYPE user_role AS ENUM ('learner', 'instructor', 'admin', 'org_admin');
         EXCEPTION WHEN duplicate_object THEN NULL;
-        END $$$;
+        END $$;
     """)
     user_role = postgresql.ENUM("learner", "instructor", "admin", "org_admin", name="user_role", create_type=False)
 
