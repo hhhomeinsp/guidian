@@ -6,18 +6,46 @@ const BASE_URL =
 const ACCESS_KEY = "guidian.access_token";
 const REFRESH_KEY = "guidian.refresh_token";
 
-function getAccess(): string | null {
+export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(ACCESS_KEY);
+  return (
+    window.localStorage.getItem(ACCESS_KEY) ??
+    window.sessionStorage.getItem(ACCESS_KEY)
+  );
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return (
+    window.localStorage.getItem(REFRESH_KEY) ??
+    window.sessionStorage.getItem(REFRESH_KEY)
+  );
+}
+
+// Legacy alias used by existing hooks
+function getAccess(): string | null {
+  return getAccessToken();
 }
 
 function getRefresh(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(REFRESH_KEY);
+  return getRefreshToken();
+}
+
+/**
+ * Persist tokens to the chosen storage.
+ * remember=true → localStorage (survives browser restarts)
+ * remember=false → sessionStorage (cleared when tab closes)
+ */
+export function setTokens(access: string, refresh: string, remember: boolean): void {
+  if (typeof window === "undefined") return;
+  const storage = remember ? window.localStorage : window.sessionStorage;
+  storage.setItem(ACCESS_KEY, access);
+  storage.setItem(REFRESH_KEY, refresh);
 }
 
 export function storeTokens(pair: TokenPair) {
   if (typeof window === "undefined") return;
+  // Default to localStorage to preserve existing behaviour
   window.localStorage.setItem(ACCESS_KEY, pair.access_token);
   window.localStorage.setItem(REFRESH_KEY, pair.refresh_token);
 }
@@ -26,6 +54,8 @@ export function clearTokens() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(ACCESS_KEY);
   window.localStorage.removeItem(REFRESH_KEY);
+  window.sessionStorage.removeItem(ACCESS_KEY);
+  window.sessionStorage.removeItem(REFRESH_KEY);
 }
 
 export class ApiError extends Error {

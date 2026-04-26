@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     S3_BUCKET_CERTIFICATES: str = "guidian-certificates"
     S3_REGION: str = "us-east-1"
 
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    WEB_BASE_URL: str = "https://guidian-web.onrender.com"
+    API_BASE_URL: str = "https://guidian-api.onrender.com"
+
     ANTHROPIC_API_KEY: str | None = None
     ANTHROPIC_MODEL: str = "claude-opus-4-7"
     OPENAI_API_KEY: str | None = None

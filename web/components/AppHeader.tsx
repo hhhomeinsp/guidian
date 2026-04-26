@@ -25,13 +25,13 @@ export function AppHeader() {
           </Link>
           <Link
             href="/certificates"
-            className="rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent"
+            className="hidden rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent sm:inline-flex"
           >
             Certificates
           </Link>
           <Link
             href="/activity"
-            className="rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent"
+            className="hidden rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent sm:inline-flex"
           >
             Activity
           </Link>
