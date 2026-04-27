@@ -237,7 +237,7 @@ function renderMdxBody(text: string): React.ReactNode {
 
     // Regular paragraph — auto-bullet long sentences (> 120 chars with multiple sentences)
     if (line.trim().length > 140 && line.includes(". ")) {
-      const sentences = line.trim().split(/(?<=\.) /).filter(s => s.trim().length > 0);
+      const sentences = line.trim().split(/\.\s+/).map((s, i, arr) => i < arr.length - 1 ? s + '.' : s).filter(s => s.trim().length > 0);
       if (sentences.length >= 3) {
         nodes.push(
           <ul key={`auto-ul-${i}`} className="my-3 space-y-2">
