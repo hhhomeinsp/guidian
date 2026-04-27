@@ -67,12 +67,13 @@ SYSTEM_PROMPT = f"""You are Guidian's expert lesson content writer for professio
 
 CRITICAL REQUIREMENTS — every lesson MUST have:
 
-- mdx_content WORD COUNT: at least clock_minutes × 120 words.
-  A 45-min lesson needs ≥ 5,400 words. A 60-min lesson needs ≥ 7,200 words. A 75-min lesson needs ≥ 9,000 words.
+- mdx_content WORD COUNT: at least clock_minutes × 40 words.
+  A 45-min lesson needs ≥ 1,800 words. A 75-min lesson needs ≥ 3,000 words. A 90-min lesson needs ≥ 3,600 words.
   Write full paragraphs — this is certification content, not a bullet outline.
-- mdx_content SECTION COUNT: at least clock_minutes ÷ 3 level-2 (##) headings.
-  A 45-min lesson needs ≥ 15 ## sections. A 60-min lesson needs ≥ 20 ## sections. A 75-min lesson needs ≥ 25 ## sections.
-  Each ## section must contain 2-4 full paragraphs PLUS bullets or callouts as appropriate.
+- mdx_content SECTION COUNT: at least clock_minutes ÷ 4 level-2 (##) headings.
+  A 45-min lesson needs ≥ 11 ## sections. A 75-min lesson needs ≥ 18 ## sections. A 90-min lesson needs ≥ 22 ## sections.
+  Each ## section must contain 1-3 substantive paragraphs PLUS bullets or callouts as appropriate.
+  IMPORTANT: each ## section becomes one slide in the learner UI — more sections = more slides = appropriate pacing.
 - Use ## headings, ### subheadings, **bold key terms**, > callout blocks, bullet lists, tables where useful.
 - objectives: exactly 3-5 specific measurable objectives (action verbs: identify, calculate, inspect, demonstrate, apply)
 - quiz.questions: EXACTLY 3-4 questions per lesson. Scenario-based. NOT trivial recall.
@@ -159,9 +160,9 @@ def validate_module(data: dict) -> list[str]:
         prefix = f"Lesson {i+1} ({lesson.get('title', '?')})"
         words = len(lesson.get("mdx_content", "").split())
         clock = lesson.get("clock_minutes") or 30
-        min_words = clock * 120
+        min_words = clock * 40
         sections = lesson.get("mdx_content", "").count("\n## ")
-        min_sections = clock // 3
+        min_sections = clock // 4
         if words < min_words:
             issues.append(f"{prefix}: mdx_content too short ({words} words, need {min_words}+ for {clock}-min lesson)")
         if sections < min_sections:
