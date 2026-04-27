@@ -30,18 +30,18 @@ export function AudioPlayer({
   const [current, setCurrent] = React.useState(0);
   const [duration, setDuration] = React.useState(0);
   const [speed, setSpeed] = React.useState<number>(1);
-  // Resolved presigned URL — fetched with auth headers, blob URL passed to <audio>
+  // Resolved presigned URL — fetched via /audio-url JSON endpoint (avoids CORS on R2)
   const [resolvedSrc, setResolvedSrc] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!src) { setResolvedSrc(null); return; }
-    let objectUrl: string | null = null;
     const token = typeof window !== 'undefined' ? (localStorage.getItem('guidian.access_token') ?? '') : '';
-    fetch(src, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => { if (!res.ok) throw new Error('audio fetch failed'); return res.blob(); })
-      .then(blob => { objectUrl = URL.createObjectURL(blob); setResolvedSrc(objectUrl); })
-      .catch((e) => { console.error('AudioPlayer fetch failed:', e); setResolvedSrc(null); });
-    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+    // Replace /audio suffix with /audio-url to get presigned URL as JSON
+    const urlEndpoint = src.replace(/\/audio$/, '/audio-url');
+    fetch(urlEndpoint, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => { if (!res.ok) throw new Error(`audio-url fetch failed: ${res.status}`); return res.json(); })
+      .then(data => { setResolvedSrc(data.url); })
+      .catch((e) => { console.error('AudioPlayer: failed to get audio URL:', e); setResolvedSrc(null); });
   }, [src]);
 
   const setPlayingState = (val: boolean) => {
