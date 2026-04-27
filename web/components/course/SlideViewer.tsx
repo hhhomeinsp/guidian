@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AudioPlayer } from "./AudioPlayer";
+import AppHeader from "@/components/AppHeader";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
@@ -419,10 +420,16 @@ function ContentSlide({
   slideNumber: number;
   totalSlides: number;
 }) {
+  // Scroll content back to top whenever the slide changes
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 });
+  }, [heading]);
+
   return (
     <div className="flex h-full w-full flex-col">
-      {/* Colored header bar */}
-      <div className="bg-gradient-to-r from-secondary to-secondary/90 px-6 py-4">
+      {/* Sticky slide header */}
+      <div className="shrink-0 bg-gradient-to-r from-secondary to-secondary/90 px-6 py-4">
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium tracking-widest text-white/50 uppercase">
             {slideNumber} of {totalSlides}
@@ -431,8 +438,8 @@ function ContentSlide({
         </div>
       </div>
 
-      {/* Body — scrollable */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      {/* Scrollable body — fills remaining space */}
+      <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-6 pb-20 md:px-8">
         {renderMdxBody(body)}
       </div>
     </div>
@@ -606,19 +613,25 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack }: SlideViewe
 
   return (
     <div
-      className="flex flex-col h-[calc(100vh-3.5rem)]"
+      className="flex flex-col h-screen"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Sticky app navbar */}
+      <div className="shrink-0">
+        <AppHeader />
+      </div>
+
+      {/* Thin progress bar — sits below navbar */}
+      <div className="shrink-0 h-1 w-full bg-muted">
+        <div
+          className="h-full bg-primary transition-all duration-300"
+          style={{ width: `${((currentSlide + 1) / totalSlides) * 100}%` }}
+        />
+      </div>
+
       {/* Slide area */}
       <div className="flex-1 overflow-hidden relative bg-background">
-        {/* Top progress bar */}
-        <div className="h-1 w-full bg-muted shrink-0">
-          <div
-            className="h-full bg-primary transition-all duration-300"
-            style={{ width: `${((currentSlide + 1) / totalSlides) * 100}%` }}
-          />
-        </div>
 
         {/* Slide counter (top-right, hidden on title slide where it would clash) */}
         {!isTitleSlide && (
