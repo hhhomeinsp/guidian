@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useCourses } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AdminCoursesPage() {
   const courses = useCourses();
@@ -13,8 +12,8 @@ export default function AdminCoursesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Courses</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-3xl font-bold text-navy">Courses</h1>
+          <p className="font-body text-steel">
             Author, edit, and review courses. Run the AI generator for a new course.
           </p>
         </div>
@@ -25,32 +24,35 @@ export default function AdminCoursesPage() {
         </Button>
       </div>
 
-      {courses.isLoading && <p className="text-muted-foreground">Loading…</p>}
+      {courses.isLoading && <p className="font-body text-steel">Loading…</p>}
       {courses.data && courses.data.length === 0 && (
-        <p className="text-muted-foreground">
+        <p className="font-body text-steel">
           No courses yet. Run the AI generator to create your first one.
         </p>
       )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {(courses.data ?? []).map((course) => (
           <Link key={course.id} href={`/admin/courses/${course.id}`}>
-            <Card className="h-full transition-colors hover:border-primary/50">
-              <CardHeader>
-                <CardTitle className="text-base">{course.title}</CardTitle>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            <div className="h-full rounded-xl border border-cloud bg-white shadow-card transition-shadow hover:shadow-card-hover">
+              <div className="border-b border-cloud px-5 py-4">
+                <h2 className="font-display text-base font-semibold text-navy leading-snug">
+                  {course.title}
+                </h2>
+                <p className="mt-1 font-body text-xs uppercase tracking-[0.12em] text-steel">
                   {course.status}
                 </p>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="line-clamp-3 text-sm text-muted-foreground">
+              </div>
+              <div className="px-5 py-4 space-y-2">
+                <p className="line-clamp-3 font-body text-sm text-steel">
                   {course.description ?? "No description."}
                 </p>
-                <div className="flex justify-between text-xs text-muted-foreground">
+                <div className="flex justify-between font-body text-xs text-steel">
                   <span>{course.ceu_hours} CEU</span>
                   <span>v{course.version}</span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </Link>
         ))}
       </div>

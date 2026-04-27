@@ -16,7 +16,7 @@ export default function CertificateDetailPage({
   const me = useMe();
 
   if (cert.isLoading || !cert.data) {
-    return <main className="container py-12 text-muted-foreground">Loading…</main>;
+    return <main className="container py-12 font-body text-steel">Loading…</main>;
   }
 
   const c = cert.data;
@@ -25,19 +25,19 @@ export default function CertificateDetailPage({
     <main className="container space-y-6 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/certificates" className="text-sm text-muted-foreground hover:underline">
+          <Link href="/certificates" className="font-body text-sm text-amber hover:underline">
             ← All certificates
           </Link>
-          <h1 className="mt-1 text-2xl font-bold">Certificate</h1>
+          <h1 className="mt-1 font-display text-2xl font-bold text-navy">Certificate</h1>
         </div>
         <div className="flex items-center gap-2">
           {c.status === "pending" && (
-            <span className="rounded-md bg-amber-500/10 px-3 py-1 text-sm text-amber-700 dark:text-amber-300">
+            <span className="rounded-lg bg-warning-bg px-3 py-1.5 font-body text-sm font-medium text-warning">
               Rendering PDF…
             </span>
           )}
           {c.status === "failed" && (
-            <span className="rounded-md bg-destructive/10 px-3 py-1 text-sm text-destructive">
+            <span className="rounded-lg bg-error-bg px-3 py-1.5 font-body text-sm font-medium text-error">
               Render failed
             </span>
           )}
@@ -51,7 +51,7 @@ export default function CertificateDetailPage({
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-muted/30 p-8">
+      <div className="rounded-xl border border-cloud bg-fog p-8">
         <Certificate
           learnerName={me.data?.full_name || me.data?.email || "—"}
           courseTitle={course.data?.title ?? "—"}
@@ -62,7 +62,7 @@ export default function CertificateDetailPage({
         />
       </div>
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center font-body text-xs text-steel">
         The on-screen preview is rendered from the component library. The authoritative
         PDF above is generated server-side by headless Chromium and stored in S3.
       </p>

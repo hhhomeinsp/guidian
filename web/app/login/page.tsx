@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "@/lib/api/hooks";
 import { setTokens } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
+import { GuidianLogo } from "@/components/ui/GuidianLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,7 +23,6 @@ export default function LoginPage() {
     setError(null);
     try {
       const pair = await login.mutateAsync({ email, password });
-      // Override default localStorage storage based on remember-me preference
       setTokens(pair.access_token, pair.refresh_token, rememberMe);
       router.push("/courses");
     } catch (err) {
@@ -31,55 +31,56 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 px-4 dark:from-slate-900 dark:to-slate-800">
+    <div className="flex min-h-screen items-center justify-center bg-cream px-4">
       <div
-        className="w-full max-w-sm rounded-2xl border border-border bg-white shadow-xl dark:bg-slate-900"
+        className="w-full max-w-sm rounded-xl border border-cloud bg-white shadow-card"
         style={{ animation: "fadeIn 0.25s ease-out both" }}
       >
-        {/* Wordmark */}
-        <div className="flex flex-col items-center gap-1 px-8 pt-8 pb-2">
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        {/* Navy header */}
+        <div className="flex flex-col items-center gap-2 rounded-t-xl bg-navy px-8 py-6">
+          <GuidianLogo size={32} strokeColor="white" accentColor="#C98A2A" />
+          <span className="font-display text-xl font-bold text-white tracking-tight">
             Guidian
           </span>
-          <p className="text-sm text-muted-foreground">Sign in to your account</p>
+          <p className="font-body text-xs text-mist">Sign in to your account</p>
         </div>
 
-        <div className="px-8 pb-8 pt-4">
+        <div className="px-8 pb-8 pt-6">
           {/* Google sign-in */}
           <button
             type="button"
             onClick={() => {
               window.location.href = "https://guidian-api.onrender.com/api/v1/auth/google";
             }}
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-border bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-navy bg-white px-4 text-sm font-medium text-navy transition-colors hover:bg-fog"
           >
             <GoogleLogo />
             Continue with Google
           </button>
 
           <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground">or</span>
-            <div className="h-px flex-1 bg-border" />
+            <div className="h-px flex-1 bg-cloud" />
+            <span className="font-body text-xs text-steel">or</span>
+            <div className="h-px flex-1 bg-cloud" />
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
             {/* Email */}
-            <label className="block space-y-1.5 text-sm">
-              <span className="font-medium">Email</span>
+            <label className="block space-y-1.5">
+              <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">Email</span>
               <input
                 type="email"
                 value={email}
                 required
                 autoComplete="email"
                 onChange={(e) => setEmail(e.target.value)}
-                className="block h-12 w-full rounded-lg border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="block h-11 w-full rounded-lg border border-cloud bg-fog px-3 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
               />
             </label>
 
             {/* Password with show/hide toggle */}
-            <label className="block space-y-1.5 text-sm">
-              <span className="font-medium">Password</span>
+            <label className="block space-y-1.5">
+              <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">Password</span>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -87,14 +88,14 @@ export default function LoginPage() {
                   required
                   autoComplete="current-password"
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block h-12 w-full rounded-lg border border-input bg-background px-3 pr-10 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="block h-11 w-full rounded-lg border border-cloud bg-fog px-3 pr-10 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
                 />
                 <button
                   type="button"
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-steel hover:text-ink"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -106,34 +107,34 @@ export default function LoginPage() {
             </label>
 
             {/* Remember me */}
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <label className="flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-input accent-primary"
+                className="h-4 w-4 rounded border-cloud accent-amber"
               />
-              <span className="text-muted-foreground">Remember me</span>
+              <span className="font-body text-sm text-slate">Remember me</span>
             </label>
 
             {error && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="rounded-md bg-error-bg px-3 py-2 text-sm text-error">
                 {error}
               </p>
             )}
 
             <Button
               type="submit"
-              className="h-12 w-full"
+              className="h-11 w-full"
               disabled={login.isPending}
             >
               {login.isPending ? "Signing in…" : "Sign in"}
             </Button>
           </form>
 
-          <p className="mt-5 text-center text-sm text-muted-foreground">
+          <p className="mt-5 text-center font-body text-sm text-steel">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+            <Link href="/register" className="font-medium text-amber underline-offset-4 hover:underline">
               Sign up
             </Link>
           </p>

@@ -11,7 +11,6 @@ import {
   useMyEnrollments,
 } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -35,9 +34,9 @@ export default function CoursesPage() {
   if (me.error) {
     return (
       <Shell>
-        <p className="text-muted-foreground">
+        <p className="text-steel">
           Please{" "}
-          <Link href="/login" className="underline">
+          <Link href="/login" className="text-amber underline">
             sign in
           </Link>{" "}
           to view courses.
@@ -50,49 +49,66 @@ export default function CoursesPage() {
 
   return (
     <Shell>
-      <h1 className="text-3xl font-bold tracking-tight">Course catalog</h1>
-      <p className="text-muted-foreground">Enroll in a course to begin earning CEU hours.</p>
-      {courses.isLoading && <p className="text-muted-foreground">Loading courses…</p>}
+      {/* Page header with amber underline accent */}
+      <div className="pb-4 border-b-2 border-amber inline-block">
+        <h1 className="font-display text-3xl font-bold text-navy">Course catalog</h1>
+      </div>
+      <p className="font-body text-steel">Enroll in a course to begin earning CEU hours.</p>
+
+      {courses.isLoading && <p className="font-body text-steel">Loading courses…</p>}
       {courses.error && (
-        <p className="text-destructive">Failed to load courses: {String(courses.error)}</p>
+        <p className="text-error">Failed to load courses: {String(courses.error)}</p>
       )}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {(courses.data ?? []).map((course) => {
           const enrolled = enrolledIds.has(course.id);
+          const stageColor = getStageColor(course.stage ?? "ce");
           return (
-            <Card key={course.id} className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="text-base">{course.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col justify-between gap-4">
-                <p className="line-clamp-3 text-sm text-muted-foreground">
-                  {course.description ?? "No description."}
-                </p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{course.ceu_hours} CEU</span>
-                  <span className="capitalize">{course.status}</span>
+            <div
+              key={course.id}
+              className="flex flex-col rounded-xl border border-cloud bg-white shadow-card overflow-hidden"
+            >
+              {/* Stage color top bar */}
+              <div className="h-1" style={{ backgroundColor: stageColor }} />
+              <div className="flex flex-col flex-1 p-5 gap-4">
+                <div className="flex-1">
+                  <h2 className="font-display text-base font-semibold text-navy leading-snug">
+                    {course.title}
+                  </h2>
+                  <p className="mt-2 line-clamp-3 font-body text-sm text-steel">
+                    {course.description ?? "No description."}
+                  </p>
                 </div>
-                <div className="flex gap-2">
-                  {enrolled ? (
-                    <Link
-                      href={`/courses/${course.id}`}
-                      className="inline-flex flex-1 items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                      Continue →
-                    </Link>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => enroll.mutate(course.id)}
-                      disabled={enroll.isPending}
-                    >
-                      {enroll.isPending ? "Enrolling…" : "Enroll"}
-                    </Button>
-                  )}
+                <div className="flex items-center justify-between">
+                  <span className="font-body text-xs uppercase tracking-[0.12em] text-steel">
+                    {course.ceu_hours} CEU
+                  </span>
+                  <span
+                    className="rounded-full px-2 py-0.5 font-body text-xs font-medium capitalize"
+                    style={{ backgroundColor: stageColor + "1A", color: stageColor }}
+                  >
+                    {course.status}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+                {enrolled ? (
+                  <Link
+                    href={`/courses/${course.id}`}
+                    className="inline-flex items-center justify-center rounded-md bg-amber px-4 py-2 text-sm font-medium text-white shadow-amber hover:bg-amber-light transition-colors"
+                  >
+                    Continue →
+                  </Link>
+                ) : (
+                  <Button
+                    className="w-full"
+                    onClick={() => enroll.mutate(course.id)}
+                    disabled={enroll.isPending}
+                  >
+                    {enroll.isPending ? "Enrolling…" : "Enroll"}
+                  </Button>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
@@ -100,6 +116,18 @@ export default function CoursesPage() {
   );
 }
 
+function getStageColor(stage: string): string {
+  const map: Record<string, string> = {
+    "pre-college": "#4A80B5",
+    vocational: "#0E7C7B",
+    college: "#3D5A73",
+    certif: "#4A7C6F",
+    licensure: "#162D4A",
+    ce: "#C98A2A",
+  };
+  return map[stage] ?? "#162D4A";
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="container space-y-6 py-8">{children}</main>;
+  return <main className="container space-y-6 py-10">{children}</main>;
 }

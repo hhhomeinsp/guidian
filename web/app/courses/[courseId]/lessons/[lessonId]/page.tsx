@@ -86,10 +86,10 @@ export default function LessonPlayerPage({
   };
 
   if (lesson.isLoading || course.isLoading) {
-    return <main className="container py-12 text-muted-foreground">Loading lesson…</main>;
+    return <main className="container py-12 font-body text-steel">Loading lesson…</main>;
   }
   if (lesson.error || !lesson.data) {
-    return <main className="container py-12 text-destructive">Failed to load lesson.</main>;
+    return <main className="container py-12 font-body text-error">Failed to load lesson.</main>;
   }
 
   // --- Slide deck mode ---
@@ -137,12 +137,12 @@ export default function LessonPlayerPage({
         />
         {lesson.data.quiz?.questions?.length ? (
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Knowledge check</h2>
+            <h2 className="font-display text-xl font-semibold text-navy">Knowledge check</h2>
             {quizSummary.data && (
-              <p className="text-sm text-muted-foreground">
+              <p className="font-body text-sm text-steel">
                 Best score: {Math.round(quizSummary.data.best_score * 100)}% ·{" "}
                 {quizSummary.data.passed ? (
-                  <span className="text-emerald-600">Passed</span>
+                  <span className="text-teal font-medium">Passed</span>
                 ) : (
                   <>
                     Passing:{" "}

@@ -2,14 +2,13 @@
 
 import { Award, CheckCircle2, Clock, MinusCircle, XCircle } from "lucide-react";
 import type { ComplianceCheck, ComplianceDecision } from "@/lib/api/schema";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 function StatusIcon({ status }: { status: ComplianceCheck["status"] }) {
-  if (status === "passed") return <CheckCircle2 className="h-5 w-5 text-emerald-600" />;
-  if (status === "failed") return <XCircle className="h-5 w-5 text-destructive" />;
-  if (status === "pending") return <Clock className="h-5 w-5 text-amber-500" />;
-  return <MinusCircle className="h-5 w-5 text-muted-foreground" />;
+  if (status === "passed") return <CheckCircle2 className="h-5 w-5 text-teal shrink-0" />;
+  if (status === "failed") return <XCircle className="h-5 w-5 text-error shrink-0" />;
+  if (status === "pending") return <Clock className="h-5 w-5 text-amber shrink-0" />;
+  return <MinusCircle className="h-5 w-5 text-steel shrink-0" />;
 }
 
 export interface CompliancePanelProps {
@@ -18,68 +17,71 @@ export interface CompliancePanelProps {
 
 export function CompliancePanel({ decision }: CompliancePanelProps) {
   return (
-    <Card>
-      <CardHeader>
+    <div className="rounded-xl border border-cloud bg-white shadow-card">
+      {/* Navy header */}
+      <div className="rounded-t-xl bg-navy px-5 py-4">
         <div className="flex items-center gap-3">
           <Award
             className={cn(
-              "h-6 w-6",
-              decision.eligible ? "text-emerald-600" : "text-muted-foreground",
+              "h-6 w-6 shrink-0",
+              decision.eligible ? "text-amber" : "text-mist",
             )}
           />
-          <CardTitle className="text-lg">
+          <h3 className="font-display text-lg font-semibold text-white">
             {decision.eligible
               ? "Eligible for certificate"
               : "Certificate requirements"}
-          </CardTitle>
+          </h3>
         </div>
         {decision.eligible ? (
-          <p className="text-sm text-emerald-700 dark:text-emerald-400">
+          <p className="mt-2 font-body text-sm text-teal-light">
             You&apos;ve met every requirement for this course. Your certificate will be issued with{" "}
             <span className="font-semibold">{decision.ceu_hours_awarded} CEU hours</span>
             {decision.accrediting_body && <> accredited by {decision.accrediting_body}</>}.
           </p>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-2 font-body text-sm text-mist">
             Complete the outstanding requirements below to become eligible for your certificate.
           </p>
         )}
-      </CardHeader>
-      <CardContent className="space-y-3">
+      </div>
+
+      <div className="px-5 py-4 space-y-3">
         <ul className="space-y-2">
           {decision.checks.map((check) => (
             <li
               key={check.id}
               className={cn(
-                "flex items-start gap-3 rounded-md border border-border p-3",
-                check.status === "passed" && "bg-emerald-500/5",
-                check.status === "failed" && "bg-destructive/5",
-                check.status === "pending" && "bg-amber-500/5",
+                "flex items-start gap-3 rounded-lg border p-3",
+                check.status === "passed" && "border-teal/30 bg-teal/5",
+                check.status === "failed" && "border-error/30 bg-error-bg",
+                check.status === "pending" && "border-amber/30 bg-warning-bg",
+                check.status === "not_applicable" && "border-cloud bg-fog",
               )}
             >
               <StatusIcon status={check.status} />
               <div className="flex-1">
-                <p className="text-sm font-medium">{check.label}</p>
+                <p className="font-body text-sm font-medium text-navy">{check.label}</p>
                 {check.detail && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{check.detail}</p>
+                  <p className="mt-0.5 font-body text-xs text-steel">{check.detail}</p>
                 )}
               </div>
             </li>
           ))}
         </ul>
         {decision.blockers.length > 0 && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
-            <p className="font-semibold text-destructive">
+          <div className="rounded-lg border border-error/30 bg-error-bg p-3">
+            <p className="font-display text-sm font-semibold text-error">
               {decision.blockers.length} blocker{decision.blockers.length === 1 ? "" : "s"}
             </p>
-            <ul className="mt-1 list-disc pl-5 text-muted-foreground">
+            <ul className="mt-1 list-disc pl-5 font-body text-sm text-slate">
               {decision.blockers.map((b, i) => (
                 <li key={i}>{b}</li>
               ))}
             </ul>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -39,7 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [me.data, me.error, router]);
 
   if (me.isLoading || !me.data) {
-    return <main className="container py-12 text-muted-foreground">Loading admin portal…</main>;
+    return <main className="container py-12 font-body text-steel">Loading admin portal…</main>;
   }
   if (!ADMIN_ROLES.has(me.data.role)) {
     return null;
@@ -47,8 +47,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="container grid gap-6 py-8 lg:grid-cols-[220px,1fr]">
-      <aside className="space-y-1">
-        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+      {/* Navy sidebar */}
+      <aside className="space-y-1 rounded-xl bg-navy p-4 h-fit">
+        <p className="mb-3 px-3 font-body text-xs font-medium uppercase tracking-[0.15em] text-amber">
           Admin portal
         </p>
         {NAV.map((item) => {
@@ -61,8 +62,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                active ? "bg-primary/10 text-primary" : "hover:bg-accent",
+                "flex items-center gap-2 rounded-md border-l-2 px-3 py-2 font-body text-sm font-medium transition-colors",
+                active
+                  ? "border-amber bg-navy-mid text-amber"
+                  : "border-transparent text-white hover:bg-navy-mid hover:text-teal-light",
               )}
             >
               <Icon className="h-4 w-4" />

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Award } from "lucide-react";
+import { GuidianLogo } from "@/components/ui/GuidianLogo";
 import { cn } from "@/lib/utils";
 
 export interface CertificateProps {
@@ -14,8 +14,8 @@ export interface CertificateProps {
 
 /**
  * Display-only certificate. The authoritative PDF is generated server-side via
- * Puppeteer and stored in S3 (build step 12). This component is for on-screen
- * preview and @media print styles only — never used to produce the canonical PDF.
+ * Puppeteer and stored in S3. This component is for on-screen preview and
+ * @media print only — never used to produce the canonical PDF.
  */
 export function Certificate({
   learnerName,
@@ -35,35 +35,52 @@ export function Certificate({
   return (
     <div
       className={cn(
-        "relative mx-auto max-w-3xl rounded-xl border-4 border-primary/20 bg-card p-12 text-center shadow-xl print:border-2 print:shadow-none",
+        "relative mx-auto max-w-3xl rounded-xl bg-navy p-12 text-center shadow-xl print:shadow-none",
         className,
       )}
+      style={{ borderTop: "6px solid #C98A2A" }}
     >
-      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-        <Award className="h-9 w-9 text-primary" aria-hidden />
+      {/* Logo */}
+      <div className="flex justify-center mb-4">
+        <GuidianLogo size={44} strokeColor="white" accentColor="#C98A2A" />
       </div>
-      <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">Certificate of Completion</p>
-      <h1 className="mt-6 text-lg text-muted-foreground">This certifies that</h1>
-      <p className="mt-2 text-4xl font-serif font-bold tracking-tight">{learnerName}</p>
-      <h2 className="mt-6 text-lg text-muted-foreground">has successfully completed</h2>
-      <p className="mt-2 text-2xl font-semibold">{courseTitle}</p>
-      <p className="mt-6 text-lg">
-        earning <span className="font-semibold">{ceuHours} CEU hours</span>
+
+      <p className="font-body text-xs uppercase tracking-[0.3em] text-amber mb-1">
+        Guidian
+      </p>
+      <p className="font-body text-xs uppercase tracking-[0.25em] text-mist">
+        Certificate of Completion
+      </p>
+
+      <div className="my-8 h-px bg-amber/30" />
+
+      <h2 className="font-body text-sm text-mist">This certifies that</h2>
+      <p className="mt-3 font-display text-4xl font-bold text-white tracking-tight italic">
+        {learnerName}
+      </p>
+      <h2 className="mt-6 font-body text-sm text-mist">has successfully completed</h2>
+      <p className="mt-2 font-display text-2xl font-semibold text-white">{courseTitle}</p>
+      <p className="mt-5 font-body text-base text-mist">
+        earning{" "}
+        <span className="font-semibold text-amber">{ceuHours} CEU hours</span>
         {accreditingBody && (
           <>
-            {" "}
-            accredited by <span className="font-semibold">{accreditingBody}</span>
+            {" "}accredited by{" "}
+            <span className="font-semibold text-white">{accreditingBody}</span>
           </>
         )}
       </p>
-      <div className="mt-10 flex justify-between text-sm text-muted-foreground">
-        <div>
-          <p className="font-medium text-foreground">{date}</p>
-          <p>Date of completion</p>
+
+      <div className="my-8 h-px bg-amber/30" />
+
+      <div className="flex justify-between font-body text-sm">
+        <div className="text-left">
+          <p className="font-semibold text-white">{date}</p>
+          <p className="text-mist text-xs">Date of completion</p>
         </div>
         <div className="text-right">
-          <p className="font-mono text-xs text-foreground">{verificationCode}</p>
-          <p>Verification code</p>
+          <p className="font-mono text-xs text-amber">{verificationCode}</p>
+          <p className="text-mist text-xs">Verification code</p>
         </div>
       </div>
     </div>

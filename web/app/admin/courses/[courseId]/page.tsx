@@ -9,7 +9,6 @@ import {
   useUpdateCEURule,
 } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface RuleForm {
   total_ceu_hours: number;
@@ -60,7 +59,7 @@ export default function AdminCourseEditorPage({
   }, [rule.data, course.data]);
 
   if (course.isLoading || !course.data || !form) {
-    return <p className="text-muted-foreground">Loading…</p>;
+    return <p className="font-body text-steel">Loading…</p>;
   }
 
   const c = course.data;
@@ -91,22 +90,23 @@ export default function AdminCourseEditorPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin/courses" className="text-sm text-muted-foreground hover:underline">
+        <Link href="/admin/courses" className="font-body text-sm text-amber hover:underline">
           ← All courses
         </Link>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight">{c.title}</h1>
-        <p className="text-muted-foreground">{c.description}</p>
+        <h1 className="mt-1 font-display text-3xl font-bold text-navy">{c.title}</h1>
+        <p className="font-body text-steel">{c.description}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">CEU rules</CardTitle>
-          <p className="text-sm text-muted-foreground">
+      {/* CEU rules card */}
+      <div className="rounded-xl border border-cloud bg-white shadow-card">
+        <div className="border-b border-cloud px-6 py-4">
+          <h2 className="font-display text-base font-semibold text-navy">CEU rules</h2>
+          <p className="mt-0.5 font-body text-sm text-steel">
             These rules are the authoritative gate the compliance engine uses
             to decide certificate eligibility.
           </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        <div className="px-6 py-5 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
               label="Total CEU hours"
@@ -139,7 +139,7 @@ export default function AdminCourseEditorPage({
               placeholder="ANCC, NBCC, etc."
             />
           </div>
-          <div className="flex flex-wrap gap-6 text-sm">
+          <div className="flex flex-wrap gap-6">
             <Checkbox
               label="Requires proctoring"
               checked={form.requires_proctoring}
@@ -151,41 +151,42 @@ export default function AdminCourseEditorPage({
               onChange={(v) => setForm({ ...form, requires_identity_verification: v })}
             />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <Button onClick={save} disabled={createRule.isPending || updateRule.isPending}>
               {createRule.isPending || updateRule.isPending ? "Saving…" : "Save rules"}
             </Button>
-            {status && <span className="text-sm text-muted-foreground">{status}</span>}
+            {status && <span className="font-body text-sm text-steel">{status}</span>}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Module outline</CardTitle>
-          <p className="text-sm text-muted-foreground">
+      {/* Module outline card */}
+      <div className="rounded-xl border border-cloud bg-white shadow-card">
+        <div className="border-b border-cloud px-6 py-4">
+          <h2 className="font-display text-base font-semibold text-navy">Module outline</h2>
+          <p className="mt-0.5 font-body text-sm text-steel">
             Read-only view of the generated structure. Per-lesson authoring
             UI is planned for a future step.
           </p>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        </div>
+        <div className="px-6 py-5 space-y-3">
           {(c.modules ?? []).map((m, mi) => (
-            <div key={m.id} className="rounded-md border border-border p-3">
-              <p className="text-sm font-semibold">
+            <div key={m.id} className="rounded-lg border border-cloud bg-fog p-4">
+              <p className="font-display text-sm font-semibold text-navy">
                 Module {mi + 1}: {m.title}
               </p>
-              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <ul className="mt-2 space-y-1">
                 {m.lessons.map((l, li) => (
-                  <li key={l.id}>
+                  <li key={l.id} className="font-body text-sm text-slate">
                     {mi + 1}.{li + 1} {l.title}{" "}
-                    <span className="text-xs">({l.clock_minutes} min)</span>
+                    <span className="text-xs text-steel">({l.clock_minutes} min)</span>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -202,14 +203,14 @@ function TextField({
   placeholder?: string;
 }) {
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">{label}</span>
       <input
         type="text"
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block w-full rounded-lg border border-cloud bg-fog px-3 py-2 font-body text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
       />
     </label>
   );
@@ -231,8 +232,8 @@ function NumberField({
   max?: number;
 }) {
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">{label}</span>
       <input
         type="number"
         value={value}
@@ -240,7 +241,7 @@ function NumberField({
         min={min}
         max={max}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block w-full rounded-lg border border-cloud bg-fog px-3 py-2 font-body text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
       />
     </label>
   );
@@ -256,12 +257,12 @@ function Checkbox({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="inline-flex items-center gap-2">
+    <label className="inline-flex items-center gap-2 font-body text-sm text-slate">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-input"
+        className="h-4 w-4 rounded border-cloud accent-amber"
       />
       {label}
     </label>

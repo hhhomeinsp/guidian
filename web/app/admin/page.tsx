@@ -1,7 +1,6 @@
 "use client";
 
 import { useAdminMetrics } from "@/lib/api/hooks";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AdminDashboard() {
   const metrics = useAdminMetrics();
@@ -9,14 +8,14 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="font-display text-3xl font-bold text-navy">Dashboard</h1>
+        <p className="font-body text-steel">
           Live metrics across the Guidian platform. Refreshes every 15 seconds.
         </p>
       </div>
-      {metrics.isLoading && <p className="text-muted-foreground">Loading…</p>}
+      {metrics.isLoading && <p className="font-body text-steel">Loading…</p>}
       {metrics.error && (
-        <p className="text-destructive">Failed to load metrics.</p>
+        <p className="font-body text-error">Failed to load metrics.</p>
       )}
       {metrics.data && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -63,23 +62,23 @@ function Metric({
   hint?: string;
   tone?: "warning" | "danger";
 }) {
-  const toneClass =
+  const valueClass =
     tone === "danger"
-      ? "text-destructive"
+      ? "text-error"
       : tone === "warning"
-        ? "text-amber-600 dark:text-amber-400"
-        : "";
+        ? "text-warning"
+        : "text-navy";
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+    <div className="rounded-xl border border-cloud bg-white shadow-card border-l-4 border-l-teal overflow-hidden">
+      <div className="px-5 pt-4 pb-1">
+        <p className="font-body text-xs font-medium uppercase tracking-[0.15em] text-amber">
           {label}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className={`text-3xl font-bold ${toneClass}`}>{value}</p>
-        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-      </CardContent>
-    </Card>
+        </p>
+      </div>
+      <div className="px-5 pb-5">
+        <p className={`font-display text-3xl font-bold ${valueClass}`}>{value}</p>
+        {hint && <p className="mt-0.5 font-body text-xs text-steel">{hint}</p>}
+      </div>
+    </div>
   );
 }

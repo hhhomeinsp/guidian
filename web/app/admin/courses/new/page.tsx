@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useGenerateCourse } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function NewCoursePage() {
   const router = useRouter();
@@ -41,18 +40,19 @@ export default function NewCoursePage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Generate course</h1>
-        <p className="text-muted-foreground">
+        <h1 className="font-display text-3xl font-bold text-navy">Generate course</h1>
+        <p className="font-body text-steel">
           Describe the topic, audience, and compliance requirement. Claude will
           produce a full course structure with modules, lessons, objectives,
           and quizzes.
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Course brief</CardTitle>
-        </CardHeader>
-        <CardContent>
+
+      <div className="rounded-xl border border-cloud bg-white shadow-card">
+        <div className="border-b border-cloud px-6 py-4">
+          <h2 className="font-display text-base font-semibold text-navy">Course brief</h2>
+        </div>
+        <div className="px-6 py-5">
           <form onSubmit={onSubmit} className="space-y-4">
             <TextArea
               label="Topic / objective *"
@@ -91,13 +91,13 @@ export default function NewCoursePage() {
               onChange={setAccreditingBody}
               placeholder="ANCC, NBCC, etc."
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="font-body text-sm text-error">{error}</p>}
             <Button type="submit" disabled={generate.isPending}>
               {generate.isPending ? "Queuing job…" : "Generate course"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -116,15 +116,15 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">{label}</span>
       <input
         type="text"
         required={required}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block w-full rounded-lg border border-cloud bg-fog px-3 py-2 font-body text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
       />
     </label>
   );
@@ -144,15 +144,15 @@ function TextArea({
   required?: boolean;
 }) {
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">{label}</span>
       <textarea
         required={required}
         placeholder={placeholder}
         value={value}
         rows={4}
         onChange={(e) => onChange(e.target.value)}
-        className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block w-full rounded-lg border border-cloud bg-fog px-3 py-2 font-body text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
       />
     </label>
   );
@@ -174,8 +174,8 @@ function NumberField({
   max?: number;
 }) {
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">{label}</span>
       <input
         type="number"
         value={value}
@@ -183,7 +183,7 @@ function NumberField({
         min={min}
         max={max}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block w-full rounded-lg border border-cloud bg-fog px-3 py-2 font-body text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
       />
     </label>
   );

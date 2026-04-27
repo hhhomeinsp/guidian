@@ -4,7 +4,6 @@ import * as React from "react";
 import { Check, X } from "lucide-react";
 import type { QuizAnswer, QuizAttemptRead, QuizPayload, QuizQuestion } from "@/lib/api/schema";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type Answer = number[] | boolean | null;
@@ -112,18 +111,18 @@ export function Quiz({ quiz, passingScore = 0.7, onSubmit, onServerSubmit }: Qui
           serverFeedback={serverFeedback?.get(q.id) ?? null}
         />
       ))}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="font-body text-sm text-error">{error}</p>}
       <div className="flex items-center justify-between">
         <Button onClick={handleSubmit} disabled={submitted || pending}>
           {pending ? "Submitting…" : submitted ? "Submitted" : "Submit answers"}
         </Button>
         {submitted && (
-          <p className="text-sm">
-            Score: <span className="font-semibold">{Math.round(score * 100)}%</span>{" "}
+          <p className="font-body text-sm">
+            Score: <span className="font-semibold text-navy">{Math.round(score * 100)}%</span>{" "}
             {passed ? (
-              <span className="text-emerald-600">· Passed</span>
+              <span className="text-teal font-medium">· Passed</span>
             ) : (
-              <span className="text-red-600">· Not yet passing</span>
+              <span className="text-error">· Not yet passing</span>
             )}
           </p>
         )}
@@ -153,13 +152,13 @@ function QuestionCard({
   const explanation = serverFeedback?.explanation ?? question.explanation;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">
-          <span className="text-muted-foreground">Q{index + 1}.</span> {question.prompt}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+    <div className="rounded-xl border border-cloud bg-white shadow-card">
+      <div className="border-b border-cloud px-5 py-4">
+        <p className="font-display text-base font-semibold text-navy">
+          <span className="text-steel font-normal">Q{index + 1}.</span> {question.prompt}
+        </p>
+      </div>
+      <div className="px-5 py-4 space-y-2">
         {question.type === "true_false" ? (
           <div className="flex gap-2">
             {[true, false].map((tf) => (
@@ -195,10 +194,10 @@ function QuestionCard({
                       }
                     }}
                     className={cn(
-                      "w-full rounded-md border px-3 py-2 text-left text-sm transition-colors",
+                      "w-full rounded-lg border px-4 py-2.5 text-left font-body text-sm transition-colors",
                       selected
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:bg-accent",
+                        ? "border-navy bg-navy text-white"
+                        : "border-cloud bg-fog text-slate hover:border-navy/40 hover:bg-cloud",
                       submitted && "cursor-default",
                     )}
                   >
@@ -212,18 +211,18 @@ function QuestionCard({
         {submitted && (
           <div
             className={cn(
-              "mt-3 flex gap-2 rounded-md p-3 text-sm",
+              "mt-3 flex gap-2 rounded-lg p-3 font-body text-sm",
               correct
-                ? "bg-emerald-500/10 text-emerald-900 dark:text-emerald-100"
-                : "bg-red-500/10 text-red-900 dark:text-red-100",
+                ? "bg-success-bg text-success"
+                : "bg-error-bg text-error",
             )}
           >
-            {correct ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+            {correct ? <Check className="h-4 w-4 shrink-0 mt-0.5" /> : <X className="h-4 w-4 shrink-0 mt-0.5" />}
             <span>{explanation ?? (correct ? "Correct." : "Incorrect.")}</span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
