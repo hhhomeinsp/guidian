@@ -97,6 +97,7 @@ export default function LessonPlayerPage({
     return (
       <SlideViewer
         lesson={lesson.data}
+        lessonId={lessonId}
         onComplete={() => {
           // If there's a quiz, drop into quiz mode. Otherwise complete and navigate.
           if (hasQuiz) {

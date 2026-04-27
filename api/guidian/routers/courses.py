@@ -1,10 +1,13 @@
 from uuid import UUID
+import boto3
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from guidian.core.config import settings
 from guidian.db.session import get_db
 from guidian.models.models import Course, Lesson, Module, User, UserRole
 from guidian.routers.deps import get_current_user, require_roles
@@ -166,3 +169,29 @@ async def get_lesson(lesson_id: UUID, db: AsyncSession = Depends(get_db), _: Use
     if not lesson:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     return lesson
+
+
+@router.get("/lessons/{lesson_id}/audio")
+async def get_lesson_audio(
+    lesson_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    lesson = (await db.execute(select(Lesson).where(Lesson.id == lesson_id))).scalar_one_or_none()
+    if not lesson:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    if not lesson.audio_url:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No audio for this lesson")
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=settings.S3_ENDPOINT_URL,
+        aws_access_key_id=settings.S3_ACCESS_KEY,
+        aws_secret_access_key=settings.S3_SECRET_KEY,
+        region_name=settings.S3_REGION,
+    )
+    url = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.S3_BUCKET_AUDIO, "Key": lesson.audio_url},
+        ExpiresIn=3600,
+    )
+    return RedirectResponse(url, status_code=302)

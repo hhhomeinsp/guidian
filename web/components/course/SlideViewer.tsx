@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AudioPlayer } from "./AudioPlayer";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,8 +27,10 @@ export interface SlideViewerProps {
     objectives: string[];
     mdx_content: string;
     image_url?: string | null;
+    audio_url?: string | null;
     clock_minutes?: number;
   };
+  lessonId: string;
   onComplete: () => void;
   onBack?: () => void;
 }
@@ -99,13 +105,21 @@ function renderMdxBody(text: string): React.ReactNode {
 
     // > blockquote callout
     if (/^>\s?/.test(line)) {
+      const content = line.replace(/^>\s*/, "");
+      const isWarning = /^[⚠️🚨]|^Warning|^CAUTION/i.test(content);
+      const isTip = /^[💡✅]|^Tip|^Note/i.test(content);
+      const borderColor = isWarning
+        ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30"
+        : isTip
+          ? "border-blue-400 bg-blue-50 dark:bg-blue-950/30"
+          : "border-slate-400 bg-slate-50 dark:bg-slate-900/30";
       nodes.push(
-        <blockquote
+        <div
           key={i}
-          className="my-3 rounded-r-lg border-l-4 border-primary bg-primary/5 px-4 py-3 italic text-foreground/80"
+          className={`my-3 rounded-r-lg border-l-4 ${borderColor} px-4 py-3 text-sm leading-relaxed`}
         >
-          {renderInline(line.replace(/^>\s?/, ""))}
-        </blockquote>,
+          {renderInline(content)}
+        </div>,
       );
       i++;
       continue;
@@ -133,8 +147,43 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
+    // Numbered list — collect consecutive items into step cards
+    if (/^\d+\.\s/.test(line)) {
+      const steps: string[] = [];
+      const startI = i;
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        steps.push(lines[i].replace(/^\d+\.\s/, ""));
+        i++;
+      }
+      nodes.push(
+        <div key={`steps-${startI}`} className="my-4 space-y-2">
+          {steps.map((text, idx) => (
+            <div key={idx} className="flex gap-3 items-start">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground mt-0.5">
+                {idx + 1}
+              </span>
+              <span className="text-base leading-relaxed">{renderInline(text)}</span>
+            </div>
+          ))}
+        </div>,
+      );
+      continue;
+    }
+
     // Blank line
     if (line.trim() === "") {
+      i++;
+      continue;
+    }
+
+    // Key insight pull quote — entire line is **text**
+    if (/^\*\*[^*]+\*\*\.?$/.test(line.trim())) {
+      const text = line.trim().replace(/^\*\*/, "").replace(/\*\*\.?$/, "");
+      nodes.push(
+        <div key={i} className="my-4 border-l-4 border-primary bg-primary/5 px-4 py-3 rounded-r-lg">
+          <p className="text-lg font-semibold text-foreground">{text}</p>
+        </div>,
+      );
       i++;
       continue;
     }
@@ -437,8 +486,12 @@ function DotIndicators({
 // Main SlideViewer
 // ---------------------------------------------------------------------------
 
-export function SlideViewer({ lesson, onComplete, onBack }: SlideViewerProps) {
+export function SlideViewer({ lesson, lessonId, onComplete, onBack }: SlideViewerProps) {
   const sections = React.useMemo(() => parseSections(lesson.mdx_content), [lesson.mdx_content]);
+
+  const audioSrc = lesson.audio_url
+    ? `${API_BASE_URL}/lessons/${lessonId}/audio`
+    : null;
 
   // Build slide list: [title, ...content, summary]
   const totalSlides = sections.length + 2; // +2 for title + summary
@@ -490,106 +543,124 @@ export function SlideViewer({ lesson, onComplete, onBack }: SlideViewerProps) {
 
   return (
     <div
-      className="relative h-[calc(100vh-3.5rem)] overflow-hidden bg-background"
+      className="flex flex-col h-[calc(100vh-3.5rem)]"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Slide counter (top-right, hidden on title slide where it would clash) */}
-      {!isTitleSlide && (
-        <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
-          {onBack && currentSlide === 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="text-muted-foreground"
-            >
-              <ArrowLeft className="mr-1 h-4 w-4" /> Back
-            </Button>
-          )}
-          <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-            {currentSlide + 1} / {totalSlides}
-          </span>
+      {/* Slide area */}
+      <div className="flex-1 overflow-hidden relative bg-background">
+        {/* Top progress bar */}
+        <div className="h-1 w-full bg-muted shrink-0">
+          <div
+            className="h-full bg-primary transition-all duration-300"
+            style={{ width: `${((currentSlide + 1) / totalSlides) * 100}%` }}
+          />
+        </div>
+
+        {/* Slide counter (top-right, hidden on title slide where it would clash) */}
+        {!isTitleSlide && (
+          <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+            {onBack && currentSlide === 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="text-muted-foreground"
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" /> Back
+              </Button>
+            )}
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+              {currentSlide + 1} / {totalSlides}
+            </span>
+          </div>
+        )}
+
+        {/* Animated slide area */}
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={currentSlide}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={transition}
+            className="absolute inset-0"
+          >
+            {isTitleSlide && (
+              <TitleSlide
+                title={lesson.title}
+                objectives={lesson.objectives}
+                imageUrl={lesson.image_url}
+                clockMinutes={lesson.clock_minutes}
+                onNext={goNext}
+              />
+            )}
+
+            {isContentSlide && sections[contentSectionIndex] && (
+              <ContentSlide
+                heading={sections[contentSectionIndex].heading}
+                body={sections[contentSectionIndex].body}
+                slideNumber={currentSlide}
+                totalSlides={totalSlides - 2} // exclude title + summary
+              />
+            )}
+
+            {isSummarySlide && (
+              <SummarySlide objectives={lesson.objectives} onComplete={onComplete} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Left arrow */}
+        {currentSlide > 0 && (
+          <button
+            aria-label="Previous slide"
+            onClick={goPrev}
+            className={cn(
+              "absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
+              "bg-background/70 text-foreground shadow-md backdrop-blur-sm",
+              "hover:bg-background hover:shadow-lg",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            )}
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+        )}
+
+        {/* Right arrow */}
+        {currentSlide < totalSlides - 1 && !isTitleSlide && (
+          <button
+            aria-label="Next slide"
+            onClick={goNext}
+            className={cn(
+              "absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
+              "bg-background/70 text-foreground shadow-md backdrop-blur-sm",
+              "hover:bg-background hover:shadow-lg",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            )}
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        )}
+
+        {/* Dot indicators (bottom center) */}
+        <div className="absolute bottom-5 left-0 right-0 z-20 flex justify-center">
+          <DotIndicators
+            total={totalSlides}
+            current={currentSlide}
+            onDotClick={(idx) => goTo(idx)}
+          />
+        </div>
+      </div>
+
+      {/* Sticky audio bar */}
+      {audioSrc && (
+        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-4 py-2">
+          <AudioPlayer src={audioSrc} title={lesson.title} />
         </div>
       )}
-
-      {/* Animated slide area */}
-      <AnimatePresence mode="wait" custom={direction}>
-        <motion.div
-          key={currentSlide}
-          custom={direction}
-          variants={slideVariants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={transition}
-          className="absolute inset-0"
-        >
-          {isTitleSlide && (
-            <TitleSlide
-              title={lesson.title}
-              objectives={lesson.objectives}
-              imageUrl={lesson.image_url}
-              clockMinutes={lesson.clock_minutes}
-              onNext={goNext}
-            />
-          )}
-
-          {isContentSlide && sections[contentSectionIndex] && (
-            <ContentSlide
-              heading={sections[contentSectionIndex].heading}
-              body={sections[contentSectionIndex].body}
-              slideNumber={currentSlide}
-              totalSlides={totalSlides - 2} // exclude title + summary
-            />
-          )}
-
-          {isSummarySlide && (
-            <SummarySlide objectives={lesson.objectives} onComplete={onComplete} />
-          )}
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Left arrow */}
-      {currentSlide > 0 && (
-        <button
-          aria-label="Previous slide"
-          onClick={goPrev}
-          className={cn(
-            "absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
-            "bg-background/70 text-foreground shadow-md backdrop-blur-sm",
-            "hover:bg-background hover:shadow-lg",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-          )}
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-      )}
-
-      {/* Right arrow */}
-      {currentSlide < totalSlides - 1 && !isTitleSlide && (
-        <button
-          aria-label="Next slide"
-          onClick={goNext}
-          className={cn(
-            "absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
-            "bg-background/70 text-foreground shadow-md backdrop-blur-sm",
-            "hover:bg-background hover:shadow-lg",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-          )}
-        >
-          <ChevronRight className="h-6 w-6" />
-        </button>
-      )}
-
-      {/* Dot indicators (bottom center) */}
-      <div className="absolute bottom-5 left-0 right-0 z-20 flex justify-center">
-        <DotIndicators
-          total={totalSlides}
-          current={currentSlide}
-          onDotClick={(idx) => goTo(idx)}
-        />
-      </div>
     </div>
   );
 }
