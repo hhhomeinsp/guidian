@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/hooks";
 import type { LearningStyle } from "@/lib/api/schema";
 import { AdaptiveRenderer, LessonPage, Quiz, SlideViewer } from "@/components/course";
+import AppHeader from "@/components/AppHeader";
 
 export default function LessonPlayerPage({
   params,
@@ -95,7 +96,12 @@ export default function LessonPlayerPage({
   // --- Slide deck mode ---
   if (showSlides) {
     return (
-      <SlideViewer
+      <div className="flex flex-col h-screen">
+        <div className="shrink-0">
+          <AppHeader />
+        </div>
+        <SlideViewer
+          className="flex-1 min-h-0"
         lesson={lesson.data}
         lessonId={lessonId}
         onComplete={() => {
@@ -112,6 +118,7 @@ export default function LessonPlayerPage({
             : undefined
         }
       />
+      </div>
     );
   }
 

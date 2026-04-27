@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AudioPlayer } from "./AudioPlayer";
-import AppHeader from "@/components/AppHeader";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
@@ -23,6 +22,7 @@ const API_BASE_URL =
 // ---------------------------------------------------------------------------
 
 export interface SlideViewerProps {
+  className?: string;
   lesson: {
     title: string;
     objectives: string[];
@@ -556,7 +556,7 @@ function DotIndicators({
 // Main SlideViewer
 // ---------------------------------------------------------------------------
 
-export function SlideViewer({ lesson, lessonId, onComplete, onBack }: SlideViewerProps) {
+export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }: SlideViewerProps) {
   const sections = React.useMemo(() => parseSections(lesson.mdx_content), [lesson.mdx_content]);
 
   const audioSrc = lesson.audio_url
@@ -613,15 +613,10 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack }: SlideViewe
 
   return (
     <div
-      className="flex flex-col h-screen"
+      className={cn("flex flex-col h-full", className)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Sticky app navbar */}
-      <div className="shrink-0">
-        <AppHeader />
-      </div>
-
       {/* Thin progress bar — sits below navbar */}
       <div className="shrink-0 h-1 w-full bg-muted">
         <div
