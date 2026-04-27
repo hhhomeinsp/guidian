@@ -1,8 +1,12 @@
 # Guidian
 
-**AI-Native Adaptive Compliance LMS.** Generates courses dynamically with Claude,
-renders them adaptively based on learner style, and tracks compliance for CE and
-relicensure programs.
+> *From first lesson to final credential.*
+
+**Guidian is an AI-native universal learning platform** that generates, delivers, and tracks education and training for every stage of a person's learning life — from a student's first vocational exploration to a seasoned professional's annual CE renewal.
+
+See [VISION.md](./VISION.md) for the full platform synopsis and product vision.
+
+---
 
 ## Monorepo layout
 

@@ -1,6 +1,8 @@
 # Guidian — CLAUDE.md
 
-AI-native adaptive compliance LMS. Deploys on Render. Repo: https://github.com/hhhomeinsp/guidian
+AI-native universal learning platform. Generates, delivers, and tracks education for every stage of a learner's life — from vocational exploration to professional CE renewal. Deploys on Render. Repo: https://github.com/hhhomeinsp/guidian
+
+See VISION.md for full product synopsis.
 
 ## Stack
 
