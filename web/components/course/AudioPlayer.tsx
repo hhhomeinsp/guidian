@@ -30,6 +30,19 @@ export function AudioPlayer({
   const [current, setCurrent] = React.useState(0);
   const [duration, setDuration] = React.useState(0);
   const [speed, setSpeed] = React.useState<number>(1);
+  // Resolved presigned URL — fetched with auth headers, blob URL passed to <audio>
+  const [resolvedSrc, setResolvedSrc] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!src) { setResolvedSrc(null); return; }
+    let objectUrl: string | null = null;
+    const token = typeof window !== 'undefined' ? (localStorage.getItem('guidian.access_token') ?? '') : '';
+    fetch(src, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => { if (!res.ok) throw new Error('audio fetch failed'); return res.blob(); })
+      .then(blob => { objectUrl = URL.createObjectURL(blob); setResolvedSrc(objectUrl); })
+      .catch(() => setResolvedSrc(null));
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [src]);
 
   const setPlayingState = (val: boolean) => {
     setPlaying(val);
@@ -83,9 +96,9 @@ export function AudioPlayer({
 
   return (
     <div className="flex items-center gap-3 px-2">
-      {src ? (
+      {resolvedSrc ? (
         <>
-          <audio ref={audioRef} src={src} preload="metadata" />
+          <audio ref={audioRef} src={resolvedSrc} preload="metadata" />
           <Button
             size="icon"
             variant="ghost"
@@ -121,7 +134,7 @@ export function AudioPlayer({
       ) : (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Volume2 className="h-3.5 w-3.5" />
-          <span>Audio generating…</span>
+          <span>{src ? 'Loading audio…' : 'Audio generating…'}</span>
         </div>
       )}
     </div>
