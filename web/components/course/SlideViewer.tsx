@@ -562,7 +562,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
   const sections = React.useMemo(() => parseSections(lesson.mdx_content), [lesson.mdx_content]);
 
   const audioSrc = lesson.audio_url
-    ? `${API_BASE_URL}/lessons/${lessonId}/audio`
+    ? `${API_BASE_URL}/courses/lessons/${lessonId}/audio`
     : null;
 
   // Tap-to-pause: hold a ref to AudioPlayer's toggle function

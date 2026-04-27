@@ -40,7 +40,7 @@ export function AudioPlayer({
     fetch(src, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => { if (!res.ok) throw new Error('audio fetch failed'); return res.blob(); })
       .then(blob => { objectUrl = URL.createObjectURL(blob); setResolvedSrc(objectUrl); })
-      .catch(() => setResolvedSrc(null));
+      .catch((e) => { console.error('AudioPlayer fetch failed:', e); setResolvedSrc(null); });
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [src]);
 
