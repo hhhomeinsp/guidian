@@ -205,7 +205,6 @@ async def get_lesson(lesson_id: UUID, db: AsyncSession = Depends(get_db), _: Use
 async def get_lesson_audio(
     lesson_id: UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
     lesson = (await db.execute(select(Lesson).where(Lesson.id == lesson_id))).scalar_one_or_none()
     if not lesson:

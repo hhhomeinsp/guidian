@@ -561,6 +561,7 @@ function DotIndicators({
 export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }: SlideViewerProps) {
   const sections = React.useMemo(() => parseSections(lesson.mdx_content), [lesson.mdx_content]);
 
+  // Public endpoint — auth removed, presigned R2 redirect handles security
   const audioSrc = lesson.audio_url
     ? `${API_BASE_URL}/courses/lessons/${lessonId}/audio`
     : null;
