@@ -186,8 +186,13 @@ EXACTLY to this schema:
 }
 
 Content quality rules:
-- mdx_content must be 800-2000 words per lesson. Depth over brevity — this is certification content.
-- Use MDX headings (##, ###), bullet lists, bold key terms, callout blocks, and code/table blocks where relevant.
+- mdx_content WORD COUNT must be at least clock_minutes × 120 words.
+  Examples: 30-min lesson → 3,600 words minimum; 45-min lesson → 5,400 words minimum; 60-min lesson → 7,200 words minimum.
+  This is non-negotiable — thin content is the #1 quality failure. Write in full paragraphs, not bullet-only outlines.
+- mdx_content must contain AT LEAST clock_minutes ÷ 3 level-2 (##) sections.
+  Examples: 30 min → 10+ ## sections; 45 min → 15+ ## sections; 60 min → 20+ ## sections.
+  Each ## section must contain 2-4 substantive paragraphs PLUS bullets, callouts, or examples as relevant.
+- Use MDX headings (##, ###), bullet lists, bold key terms, > callout blocks, and tables where relevant.
 - Every lesson needs at least 3 measurable learning objectives.
 - Every lesson needs at least 3 quiz questions. Complex/technical lessons need 4-5.
 - Quiz questions must test application and comprehension, not just recall.

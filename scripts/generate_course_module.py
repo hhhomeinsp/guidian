@@ -66,13 +66,20 @@ SCHEMA = """{
 SYSTEM_PROMPT = f"""You are Guidian's expert lesson content writer for professional certification and continuing education courses. You produce deep, publish-ready content for licensed professionals.
 
 CRITICAL REQUIREMENTS — every lesson MUST have:
-- mdx_content: 800-1500 words with ## headings, bold key terms, bullet lists
+
+- mdx_content WORD COUNT: at least clock_minutes × 120 words.
+  A 45-min lesson needs ≥ 5,400 words. A 60-min lesson needs ≥ 7,200 words. A 75-min lesson needs ≥ 9,000 words.
+  Write full paragraphs — this is certification content, not a bullet outline.
+- mdx_content SECTION COUNT: at least clock_minutes ÷ 3 level-2 (##) headings.
+  A 45-min lesson needs ≥ 15 ## sections. A 60-min lesson needs ≥ 20 ## sections. A 75-min lesson needs ≥ 25 ## sections.
+  Each ## section must contain 2-4 full paragraphs PLUS bullets or callouts as appropriate.
+- Use ## headings, ### subheadings, **bold key terms**, > callout blocks, bullet lists, tables where useful.
 - objectives: exactly 3-5 specific measurable objectives (action verbs: identify, calculate, inspect, demonstrate, apply)
 - quiz.questions: EXACTLY 3-4 questions per lesson. Scenario-based. NOT trivial recall.
   - single_choice: choices array with 4 options, correct is integer index (0-3)
   - true_false: choices: ["True", "False"], correct is boolean
 - style_tags: at least 2 tags from [visual, auditory, read, kinesthetic]
-- clock_minutes: integer 20-90
+- clock_minutes: integer matching the target time provided in the lesson outline
 
 DIAGRAM REQUIREMENT: Include at least 1 Mermaid diagram in the module (can be in any lesson). Use flowchart TD, sequenceDiagram, or stateDiagram-v2. Must be syntactically valid.
 
@@ -151,8 +158,14 @@ def validate_module(data: dict) -> list[str]:
     for i, lesson in enumerate(lessons):
         prefix = f"Lesson {i+1} ({lesson.get('title', '?')})"
         words = len(lesson.get("mdx_content", "").split())
-        if words < 500:
-            issues.append(f"{prefix}: mdx_content too short ({words} words, need 800+)")
+        clock = lesson.get("clock_minutes") or 30
+        min_words = clock * 120
+        sections = lesson.get("mdx_content", "").count("\n## ")
+        min_sections = clock // 3
+        if words < min_words:
+            issues.append(f"{prefix}: mdx_content too short ({words} words, need {min_words}+ for {clock}-min lesson)")
+        if sections < min_sections:
+            issues.append(f"{prefix}: only {sections} ## sections, need {min_sections}+ for {clock}-min lesson")
         objs = lesson.get("objectives", [])
         if len(objs) < 3:
             issues.append(f"{prefix}: only {len(objs)} objectives (need 3-5)")
