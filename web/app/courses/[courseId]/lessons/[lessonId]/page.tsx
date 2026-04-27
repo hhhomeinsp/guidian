@@ -13,7 +13,7 @@ import {
 } from "@/lib/api/hooks";
 import type { LearningStyle } from "@/lib/api/schema";
 import { AdaptiveRenderer, LessonPage, Quiz, SlideViewer } from "@/components/course";
-import AppHeader from "@/components/AppHeader";
+import { AppHeader } from "@/components/AppHeader";
 
 export default function LessonPlayerPage({
   params,
