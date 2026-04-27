@@ -125,6 +125,52 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
+    // Markdown table — collect header + separator + rows
+    if (/^\|/.test(line.trim())) {
+      const tableLines: string[] = [];
+      while (i < lines.length && /^\|/.test(lines[i].trim())) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      // Parse rows, skip separator rows (|----|----|
+      const rows = tableLines.filter(l => !/^\|[-:\s|]+\|?$/.test(l.trim()));
+      if (rows.length === 0) continue;
+      const parseRow = (l: string) =>
+        l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+      const headers = parseRow(rows[0]);
+      const body = rows.slice(1);
+      nodes.push(
+        <div key={`tbl-${i}`} className="my-4 w-full overflow-x-auto rounded-lg border border-cloud">
+          <table className="w-full min-w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-secondary text-white">
+                {headers.map((h, j) => (
+                  <th key={j} className="px-4 py-2.5 text-left text-xs font-semibold tracking-wider">
+                    {renderInline(h)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {body.map((row, ri) => {
+                const cells = parseRow(row);
+                return (
+                  <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-fog'}>
+                    {cells.map((cell, ci) => (
+                      <td key={ci} className="px-4 py-2.5 leading-relaxed text-foreground/90 border-t border-cloud">
+                        {renderInline(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
     // Bullet list — group consecutive items
     if (/^[-*]\s/.test(line)) {
       const items: string[] = [];
@@ -630,13 +676,14 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack }: SlideViewe
           </motion.div>
         </AnimatePresence>
 
-        {/* Left arrow */}
+        {/* Left arrow — hidden on mobile (use bottom bar instead) */}
         {currentSlide > 0 && (
           <button
             aria-label="Previous slide"
             onClick={goPrev}
             className={cn(
               "absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
+              "hidden md:flex",
               "bg-background/70 text-foreground shadow-md backdrop-blur-sm",
               "hover:bg-background hover:shadow-lg",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
@@ -646,13 +693,14 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack }: SlideViewe
           </button>
         )}
 
-        {/* Right arrow */}
+        {/* Right arrow — hidden on mobile */}
         {currentSlide < totalSlides - 1 && !isTitleSlide && (
           <button
             aria-label="Next slide"
             onClick={goNext}
             className={cn(
               "absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
+              "hidden md:flex",
               "bg-background/70 text-foreground shadow-md backdrop-blur-sm",
               "hover:bg-background hover:shadow-lg",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
@@ -662,13 +710,34 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack }: SlideViewe
           </button>
         )}
 
-        {/* Dot indicators (bottom center) */}
-        <div className="absolute bottom-5 left-0 right-0 z-20 flex justify-center">
+        {/* Dot indicators — hidden on mobile (use bottom nav bar) */}
+        <div className="absolute bottom-5 left-0 right-0 z-20 hidden md:flex justify-center">
           <DotIndicators
             total={totalSlides}
             current={currentSlide}
             onDotClick={(idx) => goTo(idx)}
           />
+        </div>
+
+        {/* Mobile bottom nav bar */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex md:hidden items-center justify-between border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+          <button
+            onClick={goPrev}
+            disabled={currentSlide === 0}
+            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-foreground disabled:opacity-30 active:bg-muted"
+          >
+            <ChevronLeft className="h-4 w-4" /> Prev
+          </button>
+          <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+            {currentSlide + 1} / {totalSlides}
+          </span>
+          <button
+            onClick={goNext}
+            disabled={currentSlide >= totalSlides - 1}
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-30 active:bg-primary/80"
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
