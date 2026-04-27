@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/hooks";
 import type { LearningStyle } from "@/lib/api/schema";
 import { AdaptiveRenderer, LessonPage, Quiz, SlideViewer } from "@/components/course";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 
 export default function LessonPlayerPage({
@@ -96,6 +97,7 @@ export default function LessonPlayerPage({
   // --- Slide deck mode ---
   if (showSlides) {
     return (
+      <ErrorBoundary>
       <div className="flex flex-col h-[calc(100vh-3.625rem)]">
         <SlideViewer
           className="flex-1 min-h-0"
@@ -116,6 +118,7 @@ export default function LessonPlayerPage({
         }
       />
       </div>
+      </ErrorBoundary>
     );
   }
 
