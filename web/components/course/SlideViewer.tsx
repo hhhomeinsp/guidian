@@ -414,11 +414,13 @@ function ContentSlide({
   body,
   slideNumber,
   totalSlides,
+  onTap,
 }: {
   heading: string;
   body: string;
   slideNumber: number;
   totalSlides: number;
+  onTap?: (e: React.MouseEvent) => void;
 }) {
   // Scroll content back to top whenever the slide changes
   const bodyRef = React.useRef<HTMLDivElement>(null);
@@ -438,8 +440,8 @@ function ContentSlide({
         </div>
       </div>
 
-      {/* Scrollable body — fills remaining space */}
-      <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-6 pb-20 md:px-8">
+      {/* Scrollable body — fills remaining space; tap anywhere to pause/play audio */}
+      <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-6 pb-20 md:px-8" onClick={onTap}>
         {renderMdxBody(body)}
       </div>
     </div>
@@ -563,6 +565,19 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
     ? `${API_BASE_URL}/lessons/${lessonId}/audio`
     : null;
 
+  // Tap-to-pause: hold a ref to AudioPlayer's toggle function
+  const audioToggleRef = React.useRef<(() => void) | null>(null);
+  const [audioPlaying, setAudioPlaying] = React.useState(false);
+
+  const handleContentTap = React.useCallback((e: React.MouseEvent) => {
+    // Only trigger on direct taps — not on buttons, links, or interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, select, textarea')) return;
+    if (audioSrc && audioToggleRef.current) {
+      audioToggleRef.current();
+    }
+  }, [audioSrc]);
+
   // Build slide list: [title, ...content, summary]
   const totalSlides = sections.length + 2; // +2 for title + summary
   const [currentSlide, setCurrentSlide] = React.useState(0);
@@ -675,6 +690,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
                 body={sections[contentSectionIndex].body}
                 slideNumber={currentSlide}
                 totalSlides={totalSlides - 2} // exclude title + summary
+                onTap={handleContentTap}
               />
             )}
 
@@ -751,8 +767,23 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
 
       {/* Sticky audio bar */}
       {audioSrc && (
-        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-4 py-2">
-          <AudioPlayer src={audioSrc} title={lesson.title} />
+        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-4 py-2.5">
+          <AudioPlayer
+            src={audioSrc}
+            title={lesson.title}
+            autoPlay
+            onToggleRef={audioToggleRef}
+            onPlayingChange={setAudioPlaying}
+          />
+        </div>
+      )}
+
+      {/* Tap-to-pause overlay indicator */}
+      {audioSrc && audioPlaying && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-30 opacity-0 transition-opacity" id="tap-hint">
+          <div className="rounded-full bg-black/40 p-4 backdrop-blur-sm">
+            <Play className="h-8 w-8 text-white" />
+          </div>
         </div>
       )}
     </div>
