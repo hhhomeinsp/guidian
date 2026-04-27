@@ -188,7 +188,24 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
-    // Regular paragraph
+    // Regular paragraph — auto-bullet long sentences (> 120 chars with multiple sentences)
+    if (line.trim().length > 140 && line.includes(". ")) {
+      const sentences = line.trim().split(/(?<=\.) /).filter(s => s.trim().length > 0);
+      if (sentences.length >= 3) {
+        nodes.push(
+          <ul key={`auto-ul-${i}`} className="my-3 space-y-2">
+            {sentences.map((s, j) => (
+              <li key={j} className="flex items-start gap-2">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                <span className="text-base leading-relaxed text-foreground/90">{renderInline(s.trim())}</span>
+              </li>
+            ))}
+          </ul>
+        );
+        i++;
+        continue;
+      }
+    }
     nodes.push(
       <p key={i} className="text-base leading-relaxed text-foreground/90 [&+p]:mt-3">
         {renderInline(line)}
@@ -359,12 +376,12 @@ function ContentSlide({
   return (
     <div className="flex h-full w-full flex-col">
       {/* Colored header bar */}
-      <div className="bg-gradient-to-r from-secondary to-secondary/90 px-8 py-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white md:text-2xl">{heading}</h2>
-          <span className="text-sm font-medium text-white/70">
-            {slideNumber} / {totalSlides}
+      <div className="bg-gradient-to-r from-secondary to-secondary/90 px-6 py-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium tracking-widest text-white/50 uppercase">
+            {slideNumber} of {totalSlides}
           </span>
+          <h2 className="text-lg font-bold leading-snug text-white md:text-xl">{heading}</h2>
         </div>
       </div>
 
@@ -559,7 +576,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack }: SlideViewe
 
         {/* Slide counter (top-right, hidden on title slide where it would clash) */}
         {!isTitleSlide && (
-          <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+          <div className="absolute right-4 top-4 z-20 hidden items-center gap-2 md:flex">
             {onBack && currentSlide === 0 && (
               <Button
                 variant="ghost"
