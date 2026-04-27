@@ -278,7 +278,7 @@ function TitleSlide({
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary/90 via-secondary/70 to-secondary/40" />
       )}
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent" />
@@ -359,7 +359,7 @@ function ContentSlide({
   return (
     <div className="flex h-full w-full flex-col">
       {/* Colored header bar */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 px-8 py-5">
+      <div className="bg-gradient-to-r from-secondary to-secondary/90 px-8 py-5">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-white md:text-2xl">{heading}</h2>
           <span className="text-sm font-medium text-white/70">
