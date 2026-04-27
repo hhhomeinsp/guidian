@@ -133,6 +133,23 @@ async def add_module(
     return result
 
 
+@router.delete("/modules/{module_id}", status_code=204)
+async def delete_module(
+    module_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(_author_roles()),
+):
+    module = (
+        await db.execute(
+            select(Module).where(Module.id == module_id).options(selectinload(Module.lessons))
+        )
+    ).scalar_one_or_none()
+    if not module:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Module not found")
+    await db.delete(module)
+    await db.commit()
+
+
 # --- Lessons ---
 
 @router.post("/modules/{module_id}/lessons", response_model=LessonRead, status_code=201)
@@ -161,6 +178,19 @@ async def add_lesson(
     await db.commit()
     await db.refresh(lesson)
     return lesson
+
+
+@router.delete("/lessons/{lesson_id}", status_code=204)
+async def delete_lesson(
+    lesson_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(_author_roles()),
+):
+    lesson = (await db.execute(select(Lesson).where(Lesson.id == lesson_id))).scalar_one_or_none()
+    if not lesson:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
+    await db.delete(lesson)
+    await db.commit()
 
 
 @router.get("/lessons/{lesson_id}", response_model=LessonRead)
