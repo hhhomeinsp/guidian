@@ -7,6 +7,8 @@ import {
   BookOpen,
   ClipboardList,
   LayoutDashboard,
+  ShieldCheck,
+  TrendingUp,
   Users,
   Workflow,
 } from "lucide-react";
@@ -16,6 +18,8 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/courses", label: "Courses", icon: BookOpen },
+  { href: "/admin/opportunities", label: "Pipeline", icon: TrendingUp },
+  { href: "/admin/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/ai-jobs", label: "AI jobs", icon: Workflow },
   { href: "/admin/audit", label: "Audit log", icon: ClipboardList },

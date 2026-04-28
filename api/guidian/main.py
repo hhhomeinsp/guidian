@@ -16,6 +16,8 @@ from guidian.routers import (
     users,
     xapi,
 )
+from guidian.routers.compliance_submissions import router as compliance_submissions_router
+from guidian.routers.opportunities import router as opportunities_router
 from guidian.routers.privacy import router as privacy_router
 from guidian.routers.scorm import router as scorm_router
 
@@ -51,3 +53,5 @@ app.include_router(learner.router, prefix=api_prefix)
 app.include_router(generation.router, prefix=api_prefix)
 app.include_router(privacy_router, prefix=api_prefix)
 app.include_router(scorm_router, prefix=api_prefix)
+app.include_router(opportunities_router, prefix=api_prefix)
+app.include_router(compliance_submissions_router, prefix=api_prefix)

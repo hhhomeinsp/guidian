@@ -370,3 +370,84 @@ export interface GenerationJobRead {
   attempts: number;
   created_at: ISODate;
 }
+
+// --- Opportunities (ROI Pipeline) ---
+export interface OpportunityRead {
+  id: UUID;
+  title: string;
+  profession: string;
+  target_states: string[];
+  ceu_hours: number;
+  estimated_license_holders: number;
+  renewal_frequency_years: number;
+  avg_price_per_hour: number;
+  competition_level: "low" | "medium" | "high";
+  content_reuse_score: number;
+  status: "pipeline" | "in_progress" | "published" | "skipped";
+  course_id?: UUID | null;
+  notes?: string | null;
+  created_at: ISODate;
+  updated_at: ISODate;
+  annual_addressable_market: number;
+  roi_score: number;
+}
+
+export interface OpportunityUpdate {
+  status?: string;
+  notes?: string | null;
+  course_id?: UUID | null;
+  competition_level?: string;
+  content_reuse_score?: number;
+}
+
+// --- State Requirements + Compliance Submissions ---
+export interface StateRequirementRead {
+  id: UUID;
+  state_code: string;
+  profession: string;
+  regulatory_body: string;
+  regulatory_url: string;
+  provider_app_url?: string | null;
+  course_app_url?: string | null;
+  application_fee?: number | null;
+  renewal_period_years: number;
+  online_allowed: boolean;
+  proctoring_required: boolean;
+  min_passing_score: number;
+  min_seat_time_minutes?: number | null;
+  submission_format: string;
+  processing_days: number;
+  notes?: string | null;
+}
+
+export interface SubmissionRead {
+  id: UUID;
+  course_id: UUID;
+  state_code: string;
+  profession: string;
+  status: string;
+  submitted_at?: ISODate | null;
+  approved_at?: ISODate | null;
+  expires_at?: ISODate | null;
+  approval_number?: string | null;
+  notes?: string | null;
+  created_at: ISODate;
+  updated_at: ISODate;
+  course_title?: string | null;
+}
+
+export interface SubmissionCreate {
+  course_id: UUID;
+  state_code: string;
+  profession: string;
+  notes?: string | null;
+}
+
+export interface SubmissionUpdate {
+  status?: string;
+  approval_number?: string | null;
+  notes?: string | null;
+  submitted_at?: ISODate | null;
+  approved_at?: ISODate | null;
+  expires_at?: ISODate | null;
+}

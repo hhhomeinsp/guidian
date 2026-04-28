@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+import math
 from datetime import datetime
 from uuid import UUID
 
@@ -234,3 +235,74 @@ class AIGenerationJob(Base, UUIDMixin, TimestampMixin):
     celery_task_id: Mapped[str | None] = mapped_column(String(128))
 
     __table_args__ = (CheckConstraint("attempts >= 0", name="ck_ai_job_attempts"),)
+
+
+class CourseOpportunity(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "course_opportunities"
+
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    profession: Mapped[str] = mapped_column(String(128), nullable=False)
+    target_states: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    ceu_hours: Mapped[float] = mapped_column(Float, nullable=False)
+    estimated_license_holders: Mapped[int] = mapped_column(Integer, nullable=False)
+    renewal_frequency_years: Mapped[float] = mapped_column(Float, nullable=False)
+    avg_price_per_hour: Mapped[float] = mapped_column(Float, nullable=False)
+    competition_level: Mapped[str] = mapped_column(String(16), nullable=False)  # low|medium|high
+    content_reuse_score: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-10
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pipeline")  # pipeline|in_progress|published|skipped
+    course_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("courses.id", ondelete="SET NULL"), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    @property
+    def annual_addressable_market(self) -> float:
+        return self.estimated_license_holders * (1 / self.renewal_frequency_years) * self.ceu_hours * self.avg_price_per_hour
+
+    @property
+    def roi_score(self) -> float:
+        aam = self.annual_addressable_market
+        if aam <= 0:
+            market_score = 0.0
+        else:
+            market_score = math.log10(aam) / 7.0
+        competition_map = {"low": 1.0, "medium": 0.6, "high": 0.3}
+        competition_score = competition_map.get(self.competition_level, 0.5)
+        raw = (0.4 * market_score) + (0.3 * competition_score) + (0.3 * self.content_reuse_score / 10.0)
+        return round(min(raw, 1.0) * 100, 1)
+
+
+class StateRequirement(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "state_requirements"
+
+    state_code: Mapped[str] = mapped_column(String(2), nullable=False)
+    profession: Mapped[str] = mapped_column(String(128), nullable=False)
+    regulatory_body: Mapped[str] = mapped_column(String(255), nullable=False)
+    regulatory_url: Mapped[str] = mapped_column(String(512), nullable=False)
+    provider_app_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    course_app_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    application_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
+    renewal_period_years: Mapped[float] = mapped_column(Float, nullable=False)
+    online_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    proctoring_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    min_passing_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.70)
+    min_seat_time_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    submission_format: Mapped[str] = mapped_column(String(32), nullable=False)  # pdf_email|online_portal|mail
+    processing_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (UniqueConstraint("state_code", "profession", name="uq_state_req_state_profession"),)
+
+
+class ComplianceSubmission(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "compliance_submissions"
+
+    course_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    state_code: Mapped[str] = mapped_column(String(2), nullable=False)
+    profession: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")  # draft|submitted|under_review|approved|rejected|expired
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approval_number: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    course: Mapped["Course"] = relationship(lazy="select")

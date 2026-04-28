@@ -17,11 +17,18 @@ export default function AdminCoursesPage() {
             Author, edit, and review courses. Run the AI generator for a new course.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/courses/new">
-            <Plus className="mr-1 h-4 w-4" /> Generate course
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/admin/courses/chat">
+              <Plus className="mr-1 h-4 w-4" /> New Course (Chat)
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/courses/new">
+              <Plus className="mr-1 h-4 w-4" /> Generate course
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {courses.isLoading && <p className="font-body text-steel">Loading…</p>}

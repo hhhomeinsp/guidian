@@ -5,14 +5,20 @@ Everything here is guarded by `require_roles(admin, org_admin)`. Most of the
 read paths are thin SQL aggregations over tables that already exist — nothing
 here required a schema change.
 """
+import json
 from uuid import UUID
 from datetime import datetime, timedelta, timezone
+from typing import AsyncGenerator, Optional
 
+import anthropic
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from guidian.core.config import settings
 from guidian.db.session import get_db
 from guidian.models.models import (
     AIGenerationJob,
@@ -20,6 +26,7 @@ from guidian.models.models import (
     Certificate,
     ComplianceAuditLog,
     Course,
+    CourseOpportunity,
     Enrollment,
     User,
     UserRole,
@@ -33,6 +40,18 @@ from guidian.schemas.admin import (
     CEURuleRead,
     CEURuleUpdate,
 )
+
+_COURSE_CHAT_SYSTEM = """You are Guidian's CE course design expert. Help the admin design a continuing education course. Gather: target profession and state(s), CEU hours required, key topics, learning objectives, regulatory requirements. Ask one or two questions at a time. When you have enough info to generate, output a JSON block exactly like this on its own line: COURSE_READY:{"title":"...","description":"...","ceu_hours":X,"target_audience":"...","compliance_requirement":"...","accrediting_body":"...","num_modules":4,"lessons_per_module":4,"state_approvals":[]}"""
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class CourseChatRequest(BaseModel):
+    messages: list[ChatMessage]
+    opportunity_id: Optional[str] = None
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -154,3 +173,53 @@ async def update_rule(rule_id: UUID, body: CEURuleUpdate, db: AsyncSession = Dep
     await db.commit()
     await db.refresh(rule)
     return rule
+
+
+# --- Course chat (SSE) -----------------------------------------------------
+
+@router.post("/course-chat", dependencies=[Depends(_admin_dep())])
+async def course_chat(body: CourseChatRequest, db: AsyncSession = Depends(get_db)):
+    if not settings.ANTHROPIC_API_KEY:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI service not configured")
+
+    system = _COURSE_CHAT_SYSTEM
+    if body.opportunity_id:
+        opp = (
+            await db.execute(select(CourseOpportunity).where(CourseOpportunity.id == body.opportunity_id))
+        ).scalar_one_or_none()
+        if opp:
+            opp_ctx = (
+                f"\n\nContext from pipeline opportunity:\n"
+                f"Title: {opp.title}\nProfession: {opp.profession}\n"
+                f"States: {', '.join(opp.target_states)}\nCEU Hours: {opp.ceu_hours}\n"
+                f"Notes: {opp.notes or 'None'}"
+            )
+            system = _COURSE_CHAT_SYSTEM + opp_ctx
+
+    messages = [{"role": m.role, "content": m.content} for m in body.messages]
+
+    async def stream_events() -> AsyncGenerator[str, None]:
+        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        accumulated = ""
+        async with client.messages.stream(
+            model="claude-sonnet-4-6",
+            max_tokens=2048,
+            system=system,
+            messages=messages,
+        ) as stream:
+            async for text in stream.text_stream:
+                accumulated += text
+                yield f"data: {json.dumps({'text': text})}\n\n"
+                if "COURSE_READY:" in accumulated:
+                    idx = accumulated.index("COURSE_READY:")
+                    spec_str = accumulated[idx + len("COURSE_READY:"):]
+                    brace_start = spec_str.find("{")
+                    brace_end = spec_str.rfind("}")
+                    if brace_start != -1 and brace_end != -1:
+                        try:
+                            spec = json.loads(spec_str[brace_start : brace_end + 1])
+                            yield f"data: {json.dumps({'ready': True, 'spec': spec})}\n\n"
+                        except json.JSONDecodeError:
+                            pass
+
+    return StreamingResponse(stream_events(), media_type="text/event-stream")

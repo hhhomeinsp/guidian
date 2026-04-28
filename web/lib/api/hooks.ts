@@ -21,9 +21,15 @@ import type {
   Lesson,
   LessonProgressRead,
   LessonProgressUpdate,
+  OpportunityRead,
+  OpportunityUpdate,
   QuizAttemptRead,
   QuizAttemptRequest,
   QuizAttemptsSummary,
+  StateRequirementRead,
+  SubmissionCreate,
+  SubmissionRead,
+  SubmissionUpdate,
   TokenPair,
   UserRead,
   VARKSubmission,
@@ -320,6 +326,66 @@ export function useSubmitVark() {
         body: JSON.stringify(body),
       }),
     onSuccess: (data) => qc.setQueryData(["learner", "profile"], data),
+  });
+}
+
+// --- Opportunities ---
+export function useOpportunities() {
+  return useQuery({
+    queryKey: ["admin", "opportunities"],
+    queryFn: () => apiFetch<OpportunityRead[]>("/opportunities"),
+  });
+}
+
+export function useUpdateOpportunity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: OpportunityUpdate }) =>
+      apiFetch<OpportunityRead>(`/opportunities/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "opportunities"] }),
+  });
+}
+
+// --- State requirements ---
+export function useStateRequirements() {
+  return useQuery({
+    queryKey: ["compliance", "states"],
+    queryFn: () => apiFetch<StateRequirementRead[]>("/compliance/states"),
+  });
+}
+
+// --- Compliance submissions ---
+export function useComplianceSubmissions() {
+  return useQuery({
+    queryKey: ["compliance", "submissions"],
+    queryFn: () => apiFetch<SubmissionRead[]>("/compliance/submissions"),
+  });
+}
+
+export function useCreateSubmission() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SubmissionCreate) =>
+      apiFetch<SubmissionRead>("/compliance/submissions", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance", "submissions"] }),
+  });
+}
+
+export function useUpdateSubmission() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: SubmissionUpdate }) =>
+      apiFetch<SubmissionRead>(`/compliance/submissions/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance", "submissions"] }),
   });
 }
 
