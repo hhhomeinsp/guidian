@@ -45,6 +45,7 @@ export function useMe() {
     retry: false,
     enabled: !!getAccessToken(),
     staleTime: 30000,
+    gcTime: 0,
   });
 }
 

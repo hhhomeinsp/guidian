@@ -32,22 +32,27 @@ function getRefresh(): string | null {
 }
 
 /**
- * Persist tokens to the chosen storage.
- * remember=true → localStorage (survives browser restarts)
- * remember=false → sessionStorage (cleared when tab closes)
+ * Persist tokens to storage.
+ * Always writes to sessionStorage (immune to iOS private-mode localStorage blocks).
+ * If remember=true, also attempts localStorage for cross-session persistence.
  */
 export function setTokens(access: string, refresh: string, remember: boolean): void {
   if (typeof window === "undefined") return;
-  const storage = remember ? window.localStorage : window.sessionStorage;
-  storage.setItem(ACCESS_KEY, access);
-  storage.setItem(REFRESH_KEY, refresh);
+  // sessionStorage always works, even in iOS private browsing
+  window.sessionStorage.setItem(ACCESS_KEY, access);
+  window.sessionStorage.setItem(REFRESH_KEY, refresh);
+  if (remember) {
+    try {
+      window.localStorage.setItem(ACCESS_KEY, access);
+      window.localStorage.setItem(REFRESH_KEY, refresh);
+    } catch {
+      // iOS private mode throws QuotaExceededError on localStorage writes — sessionStorage fallback is sufficient
+    }
+  }
 }
 
 export function storeTokens(pair: TokenPair) {
-  if (typeof window === "undefined") return;
-  // Default to localStorage to preserve existing behaviour
-  window.localStorage.setItem(ACCESS_KEY, pair.access_token);
-  window.localStorage.setItem(REFRESH_KEY, pair.refresh_token);
+  setTokens(pair.access_token, pair.refresh_token, true);
 }
 
 export function clearTokens() {

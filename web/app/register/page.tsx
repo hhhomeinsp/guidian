@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useLogin, useRegister } from "@/lib/api/hooks";
@@ -9,7 +8,6 @@ import { setTokens } from "@/lib/api/client";
 import { GuidianLogo } from "@/components/ui/GuidianLogo";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const register = useRegister();
   const login = useLogin();
   const [email, setEmail] = React.useState("");
@@ -25,7 +23,7 @@ export default function RegisterPage() {
       await register.mutateAsync({ email, password, full_name: fullName });
       const pair = await login.mutateAsync({ email, password });
       setTokens(pair.access_token, pair.refresh_token, true);
-      router.push("/courses");
+      window.location.href = "/courses";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     }

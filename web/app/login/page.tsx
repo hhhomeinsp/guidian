@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "@/lib/api/hooks";
-import { setTokens } from "@/lib/api/client";
+import { setTokens, ApiError } from "@/lib/api/client";
 import { GuidianLogo } from "@/components/ui/GuidianLogo";
 
 export default function LoginPage() {
-  const router = useRouter();
   const login = useLogin();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -26,7 +24,13 @@ export default function LoginPage() {
       // Full reload clears React Query cache and ensures iOS picks up the new token
       window.location.href = "/courses";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      if (err instanceof ApiError && err.status === 401) {
+        setError("Incorrect email or password.");
+      } else if (err instanceof ApiError) {
+        setError(`Something went wrong (${err.status}). Please try again.`);
+      } else {
+        setError("Unable to connect. Please check your connection and try again.");
+      }
     }
   };
 

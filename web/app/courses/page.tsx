@@ -30,7 +30,7 @@ export default function CoursesPage() {
     }
   }, [me.data, profile.data, router]);
 
-  if (me.isLoading || (!me.data && !me.error)) return <Shell>Loading…</Shell>;
+  if (me.isLoading) return <Shell>Loading…</Shell>;
   if (me.error || !me.data) {
     return (
       <Shell>
