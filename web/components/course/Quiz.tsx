@@ -111,18 +111,18 @@ export function Quiz({ quiz, passingScore = 0.7, onSubmit, onServerSubmit }: Qui
           serverFeedback={serverFeedback?.get(q.id) ?? null}
         />
       ))}
-      {error && <p className="font-body text-sm text-error">{error}</p>}
+      {error && <p className="text-sm text-[#FF3B30]">{error}</p>}
       <div className="flex items-center justify-between">
         <Button onClick={handleSubmit} disabled={submitted || pending}>
           {pending ? "Submitting…" : submitted ? "Submitted" : "Submit answers"}
         </Button>
         {submitted && (
-          <p className="font-body text-sm">
-            Score: <span className="font-semibold text-navy">{Math.round(score * 100)}%</span>{" "}
+          <p className="text-sm">
+            Score: <span className="font-semibold text-[#1D1D1F]">{Math.round(score * 100)}%</span>{" "}
             {passed ? (
-              <span className="text-teal font-medium">· Passed</span>
+              <span className="text-[#34C759] font-medium">· Passed</span>
             ) : (
-              <span className="text-error">· Not yet passing</span>
+              <span className="text-[#FF3B30]">· Not yet passing</span>
             )}
           </p>
         )}
@@ -152,10 +152,10 @@ function QuestionCard({
   const explanation = serverFeedback?.explanation ?? question.explanation;
 
   return (
-    <div className="rounded-xl border border-cloud bg-white shadow-card">
-      <div className="border-b border-cloud px-5 py-4">
-        <p className="font-display text-base font-semibold text-navy">
-          <span className="text-steel font-normal">Q{index + 1}.</span> {question.prompt}
+    <div className="rounded-[18px] border border-[#D2D2D7] bg-white shadow-card">
+      <div className="border-b border-[#D2D2D7] px-5 py-4">
+        <p className="text-base font-semibold text-[#1D1D1F]">
+          <span className="text-[#6E6E73] font-normal">Q{index + 1}.</span> {question.prompt}
         </p>
       </div>
       <div className="px-5 py-4 space-y-2">
@@ -180,6 +180,8 @@ function QuestionCard({
                 question.type === "multiple_choice"
                   ? Array.isArray(value) && value.includes(i)
                   : value === i || (Array.isArray(value) && value[0] === i);
+              const showCorrect = submitted && selected && correct === true;
+              const showIncorrect = submitted && selected && correct === false;
               return (
                 <li key={i}>
                   <button
@@ -194,10 +196,14 @@ function QuestionCard({
                       }
                     }}
                     className={cn(
-                      "w-full rounded-lg border px-4 py-2.5 text-left font-body text-sm transition-colors",
-                      selected
-                        ? "border-navy bg-navy text-white"
-                        : "border-cloud bg-fog text-slate hover:border-navy/40 hover:bg-cloud",
+                      "w-full rounded-[10px] border-[1.5px] px-4 py-2.5 text-left text-sm transition-colors",
+                      showCorrect
+                        ? "border-[#34C759] bg-[#F0FFF4] text-[#1D1D1F]"
+                        : showIncorrect
+                          ? "border-[#FF3B30] bg-[#FFF2F1] text-[#1D1D1F]"
+                          : selected
+                            ? "border-[#0071E3] bg-[#E8F0FE] text-[#1D1D1F]"
+                            : "border-[#D2D2D7] bg-white text-[#1D1D1F] hover:border-[#0071E3]/40 hover:bg-[#E8F0FE]/30",
                       submitted && "cursor-default",
                     )}
                   >
@@ -211,14 +217,14 @@ function QuestionCard({
         {submitted && (
           <div
             className={cn(
-              "mt-3 flex gap-2 rounded-lg p-3 font-body text-sm",
-              correct
-                ? "bg-success-bg text-success"
-                : "bg-error-bg text-error",
+              "mt-3 flex gap-2 rounded-[10px] p-3 text-sm",
+              correct ? "bg-[#F0FFF4]" : "bg-[#FFF2F1]",
             )}
           >
-            {correct ? <Check className="h-4 w-4 shrink-0 mt-0.5" /> : <X className="h-4 w-4 shrink-0 mt-0.5" />}
-            <span>{explanation ?? (correct ? "Correct." : "Incorrect.")}</span>
+            {correct
+              ? <Check className="h-4 w-4 shrink-0 mt-0.5 text-[#34C759]" />
+              : <X className="h-4 w-4 shrink-0 mt-0.5 text-[#FF3B30]" />}
+            <span className="text-[#1D1D1F]">{explanation ?? (correct ? "Correct." : "Incorrect.")}</span>
           </div>
         )}
       </div>

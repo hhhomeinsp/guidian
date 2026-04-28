@@ -1,83 +1,119 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* ── Guidian named tokens ─────────────────────────────────── */
-    --color-navy: #162D4A;
-    --color-navy-deep: #0D1C2E;
-    --color-navy-mid: #1E3D5C;
+    /* ── Guidian Apple design tokens ───────────────────────────── */
+    --color-navy: #1D1D1F;
+    --color-navy-deep: #000000;
+    --color-navy-mid: #2D2D2F;
+    --color-brand: #162D4A;
     --color-amber: #C98A2A;
     --color-amber-light: #E4A94A;
     --color-amber-dim: #8B5E1A;
+    --color-blue: #0071E3;
+    --color-blue-hover: #0077ED;
+    --color-blue-light: #E8F0FE;
     --color-teal: #0E7C7B;
     --color-teal-light: #13A09E;
     --color-teal-dim: #095857;
-    --color-ink: #0D1C2B;
+    --color-ink: #1D1D1F;
     --color-slate: #3D5A73;
-    --color-steel: #6B8499;
-    --color-mist: #B8CADA;
-    --color-cloud: #DDE8F0;
-    --color-fog: #EDF2F6;
-    --color-cream: #FAF7F2;
-    --color-success: #2A7A4A;
-    --color-success-bg: #EAF5EE;
-    --color-warning: #B56A10;
-    --color-warning-bg: #FEF3E2;
-    --color-error: #A53030;
-    --color-error-bg: #FDEAEA;
-    --color-info: #1A5F8A;
-    --color-info-bg: #E3EFF8;
+    --color-steel: #6E6E73;
+    --color-mist: #AEAEB2;
+    --color-cloud: #D2D2D7;
+    --color-fog: #F5F5F7;
+    --color-cream: #F5F5F7;
+    --color-secondary: #6E6E73;
+    --color-tertiary: #AEAEB2;
+    --color-separator: #D2D2D7;
+    --color-fill: #F5F5F7;
+    --color-surface: #FFFFFF;
+    --color-surface-2: #FBFBFD;
+    --color-success: #34C759;
+    --color-success-bg: #F0FFF4;
+    --color-warning: #FF9F0A;
+    --color-warning-bg: #FFF8EC;
+    --color-error: #FF3B30;
+    --color-error-bg: #FFF2F1;
+    --color-info: #0071E3;
+    --color-info-bg: #E8F0FE;
+    --stage-pre-college: #5E5CE6;
+    --stage-vocational: #30B0C7;
+    --stage-college: #0071E3;
+    --stage-certif: #34C759;
+    --stage-licensure: #1D1D1F;
+    --stage-ce: #FF9F0A;
 
-    /* Accessible text colors — WCAG AA compliant for body text on white/cream/fog */
-    --color-amber-accessible: #8B5E00;   /* 4.6:1 on white */
-    --color-steel-accessible: #4A6275;   /* 4.7:1 on white */
-    --color-slate-accessible: #2D4257;   /* 7.2:1 on white */
+    /* Accessible text colors */
+    --color-amber-accessible: #8B5E00;
+    --color-steel-accessible: #4A6275;
+    --color-slate-accessible: #2D4257;
 
     /* ── shadcn semantic tokens (HSL) ─────────────────────────── */
-    --background: 38 44% 96%;        /* cream     #FAF7F2 */
-    --foreground: 210 54% 11%;       /* ink       #0D1C2B */
-    --card: 0 0% 100%;
-    --card-foreground: 210 54% 11%;
-    --primary: 36 65% 48%;           /* amber     #C98A2A */
+    --background: 240 9% 97%;       /* fill      #F5F5F7 */
+    --foreground: 240 3% 12%;       /* ink       #1D1D1F */
+    --card: 0 0% 100%;              /* surface   #FFFFFF */
+    --card-foreground: 240 3% 12%;
+    --primary: 211 100% 45%;        /* blue      #0071E3 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 54% 19%;        /* navy      #162D4A */
+    --secondary: 240 2% 18%;        /* navy-mid  #2D2D2F */
     --secondary-foreground: 0 0% 100%;
-    --muted: 207 33% 95%;            /* fog       #EDF2F6 */
-    --muted-foreground: 207 18% 51%; /* steel     #6B8499 */
-    --accent: 205 39% 90%;           /* cloud     #DDE8F0 */
-    --accent-foreground: 210 54% 11%;
-    --destructive: 0 55% 42%;        /* error     #A53030 */
+    --muted: 240 9% 97%;            /* fill      #F5F5F7 */
+    --muted-foreground: 240 2% 44%; /* secondary #6E6E73 */
+    --accent: 213 86% 95%;          /* blue-light #E8F0FE */
+    --accent-foreground: 211 100% 45%;
+    --destructive: 3 100% 60%;      /* error     #FF3B30 */
     --destructive-foreground: 0 0% 100%;
-    --border: 208 30% 85%;
-    --input: 208 30% 85%;
-    --ring: 36 65% 48%;              /* amber     #C98A2A */
-    --radius: 0.5rem;
+    --border: 240 5% 83%;           /* separator #D2D2D7 */
+    --input: 240 5% 83%;
+    --ring: 211 100% 45%;           /* blue      #0071E3 */
+    --radius: 0.625rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+    --shadow-xl: 0 24px 60px rgba(0,0,0,0.12);
   }
 
   .dark {
-    --background: 213 56% 12%;       /* navy-deep #0D1C2E */
-    --foreground: 205 39% 90%;       /* cloud     #DDE8F0 */
-    --card: 210 51% 18%;             /* navy-mid  #1E3D5C */
-    --card-foreground: 205 39% 90%;
-    --primary: 37 74% 59%;           /* amber-light #E4A94A */
-    --primary-foreground: 213 56% 12%;
-    --secondary: 210 51% 24%;        /* navy-mid  #1E3D5C */
-    --secondary-foreground: 205 39% 90%;
-    --muted: 212 41% 22%;
-    --muted-foreground: 208 31% 65%;
-    --accent: 212 41% 25%;           /* #253D58   */
-    --accent-foreground: 205 39% 90%;
-    --destructive: 0 55% 42%;
+    --background: 0 0% 0%;          /* #000000 */
+    --foreground: 240 9% 97%;       /* #F5F5F7 */
+    --card: 240 2% 12%;             /* #1C1C1E */
+    --card-foreground: 240 9% 97%;
+    --primary: 211 100% 45%;        /* #0071E3 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 2% 18%;        /* #2D2D2F */
+    --secondary-foreground: 240 9% 97%;
+    --muted: 240 2% 18%;
+    --muted-foreground: 240 2% 65%;
+    --accent: 240 2% 22%;
+    --accent-foreground: 240 9% 97%;
+    --destructive: 3 100% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 212 41% 25%;           /* #253D58   */
-    --input: 212 41% 25%;
-    --ring: 37 74% 59%;              /* amber-light */
+    --border: 240 2% 25%;
+    --input: 240 2% 25%;
+    --ring: 211 100% 45%;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   }
+}
+
+/* Frosted glass header */
+.header-frosted {
+  background-color: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dark .header-frosted {
+  background-color: rgba(0, 0, 0, 0.72);
 }

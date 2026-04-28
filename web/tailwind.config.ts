@@ -11,9 +11,9 @@ const config: Config = {
     container: { center: true, padding: "1rem" },
     extend: {
       fontFamily: {
-        display: ["Georgia", "Times New Roman", "serif"],
-        body: ["Georgia", "serif"],
-        mono: ["Courier New", "Courier", "monospace"],
+        display: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        body: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        mono: ["SF Mono", "Fira Code", "monospace"],
       },
       colors: {
         // shadcn CSS-var tokens
@@ -46,65 +46,79 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Guidian brand palette
+        // Guidian brand palette — Apple-inspired
         navy: {
-          DEFAULT: "#162D4A",
-          deep: "#0D1C2E",
-          mid: "#1E3D5C",
+          DEFAULT: "#1D1D1F",   // Apple near-black
+          deep: "#000000",
+          mid: "#2D2D2F",
+          brand: "#162D4A",     // Original brand navy — logo/hero only
         },
         amber: {
           DEFAULT: "#C98A2A",
           light: "#E4A94A",
           dim: "#8B5E1A",
         },
+        blue: {
+          DEFAULT: "#0071E3",   // Apple blue — primary CTA
+          hover: "#0077ED",
+          light: "#E8F0FE",
+        },
         teal: {
           DEFAULT: "#0E7C7B",
           light: "#13A09E",
           dim: "#095857",
         },
-        ink: "#0D1C2B",
+        ink: "#1D1D1F",
         slate: "#3D5A73",
-        steel: "#6B8499",
-        mist: "#B8CADA",
-        cloud: "#DDE8F0",
-        fog: "#EDF2F6",
-        cream: "#FAF7F2",
-        // Journey stage colors
+        steel: "#6E6E73",
+        mist: "#AEAEB2",
+        cloud: "#D2D2D7",
+        fog: "#F5F5F7",
+        cream: "#F5F5F7",
+        fill: "#F5F5F7",
+        surface: "#FFFFFF",
+        separator: "#D2D2D7",
+        // Journey stage colors — Apple palette
         stage: {
-          "pre-college": "#4A80B5",
-          vocational: "#0E7C7B",
-          college: "#3D5A73",
-          certif: "#4A7C6F",
-          licensure: "#162D4A",
-          ce: "#C98A2A",
+          "pre-college": "#5E5CE6",
+          vocational: "#30B0C7",
+          college: "#0071E3",
+          certif: "#34C759",
+          licensure: "#1D1D1F",
+          ce: "#FF9F0A",
         },
-        // Semantic
+        // Semantic — Apple values
         success: {
-          DEFAULT: "#2A7A4A",
-          bg: "#EAF5EE",
+          DEFAULT: "#34C759",
+          bg: "#F0FFF4",
         },
         warning: {
-          DEFAULT: "#B56A10",
-          bg: "#FEF3E2",
+          DEFAULT: "#FF9F0A",
+          bg: "#FFF8EC",
         },
         error: {
-          DEFAULT: "#A53030",
-          bg: "#FDEAEA",
+          DEFAULT: "#FF3B30",
+          bg: "#FFF2F1",
         },
         info: {
-          DEFAULT: "#1A5F8A",
-          bg: "#E3EFF8",
+          DEFAULT: "#0071E3",
+          bg: "#E8F0FE",
         },
       },
       borderRadius: {
+        sm: "6px",
+        DEFAULT: "10px",
+        md: "10px",
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        xl: "18px",
+        "2xl": "24px",
+        full: "9999px",
       },
       boxShadow: {
-        "card": "0 2px 8px 0 rgba(22,45,74,0.08)",
-        "card-hover": "0 4px 16px 0 rgba(22,45,74,0.14)",
-        "amber": "0 4px 14px 0 rgba(201,138,42,0.35)",
+        card: "0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
+        "card-hover": "0 12px 32px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06)",
+        lg: "0 12px 32px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06)",
+        xl: "0 24px 60px rgba(0,0,0,0.12)",
       },
     },
   },

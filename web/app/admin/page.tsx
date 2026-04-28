@@ -8,14 +8,14 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold text-navy">Dashboard</h1>
-        <p className="font-body text-steel">
+        <h1 className="text-3xl font-bold text-[#1D1D1F]">Dashboard</h1>
+        <p className="text-[#6E6E73]">
           Live metrics across the Guidian platform. Refreshes every 15 seconds.
         </p>
       </div>
-      {metrics.isLoading && <p className="font-body text-steel">Loading…</p>}
+      {metrics.isLoading && <p className="text-[#6E6E73]">Loading…</p>}
       {metrics.error && (
-        <p className="font-body text-error">Failed to load metrics.</p>
+        <p className="text-[#FF3B30]">Failed to load metrics.</p>
       )}
       {metrics.data && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -64,20 +64,18 @@ function Metric({
 }) {
   const valueClass =
     tone === "danger"
-      ? "text-error"
+      ? "text-[#FF3B30]"
       : tone === "warning"
-        ? "text-warning"
-        : "text-navy";
+        ? "text-[#FF9F0A]"
+        : "text-[#0071E3]";
   return (
-    <div className="rounded-xl border border-cloud bg-white shadow-card border-l-4 border-l-teal overflow-hidden">
+    <div className="rounded-[18px] bg-white shadow-card overflow-hidden">
       <div className="px-5 pt-4 pb-1">
-        <p className="font-body text-xs font-medium uppercase tracking-[0.15em] text-amber-dim">
-          {label}
-        </p>
+        <p className="text-xs font-medium text-[#6E6E73]">{label}</p>
       </div>
       <div className="px-5 pb-5">
-        <p className={`font-display text-3xl font-bold ${valueClass}`}>{value}</p>
-        {hint && <p className="mt-0.5 font-body text-xs text-steel">{hint}</p>}
+        <p className={`text-3xl font-bold ${valueClass}`}>{value}</p>
+        {hint && <p className="mt-0.5 text-xs text-[#6E6E73]">{hint}</p>}
       </div>
     </div>
   );

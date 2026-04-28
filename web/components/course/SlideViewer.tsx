@@ -425,13 +425,13 @@ function ContentSlide({
       aria-label={`Slide ${slideNumber} of ${totalSlides}: ${heading}`}
     >
       {/* Sticky slide header */}
-      <div className="shrink-0 bg-gradient-to-r from-secondary to-secondary/90 px-6 py-4">
+      <div className="shrink-0 bg-white border-b border-[#D2D2D7] px-6 py-4">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium tracking-widest text-white/50 uppercase">
+          <span className="inline-flex items-center self-start rounded-full bg-[#E8F0FE] px-2.5 py-0.5 text-xs font-medium text-[#0071E3]">
             {slideNumber} of {totalSlides}
           </span>
           <h2
-            className="text-lg font-bold leading-snug text-white md:text-xl"
+            className="text-lg font-semibold leading-snug text-[#1D1D1F] md:text-xl"
             aria-live="polite"
           >
             {heading}
@@ -444,15 +444,15 @@ function ContentSlide({
             <button
               onClick={(e) => { e.stopPropagation(); onAudioToggle?.(); }}
               aria-label={audioPlaying ? "Pause audio" : "Play audio"}
-              className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 active:scale-95 transition-transform"
+              className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-[#0071E3] text-white hover:bg-[#0077ED] active:scale-95 transition-transform"
             >
               {audioPlaying
                 ? <Pause className="h-3 w-3" aria-hidden />
                 : <Play className="h-3 w-3 translate-x-px" aria-hidden />}
             </button>
-            <div className="flex-1 h-1 rounded-full bg-white/20 overflow-hidden">
+            <div className="flex-1 h-1 rounded-full bg-[#D2D2D7] overflow-hidden">
               <div
-                className="h-full bg-white/70 rounded-full transition-all duration-300"
+                className="h-full bg-[#0071E3] rounded-full transition-all duration-300"
                 style={{ width: `${audioPct ?? 0}%` }}
               />
             </div>
@@ -592,7 +592,7 @@ function InactivityModal({
       className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
     >
       <div className="mx-4 max-w-sm rounded-2xl bg-white p-8 shadow-xl text-center">
-        <Clock className="mx-auto mb-4 h-10 w-10 text-amber-500" aria-hidden />
+        <Clock className="mx-auto mb-4 h-10 w-10 text-[#FF9F0A]" aria-hidden />
         <h3 id="inactivity-title" className="mb-2 text-xl font-bold text-foreground">
           {variant === "warn" ? "Still there?" : "Session paused"}
         </h3>

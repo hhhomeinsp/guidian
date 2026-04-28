@@ -6,7 +6,6 @@ import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useLogin, useRegister } from "@/lib/api/hooks";
 import { setTokens } from "@/lib/api/client";
-import { Button } from "@/components/ui/button";
 import { GuidianLogo } from "@/components/ui/GuidianLogo";
 
 export default function RegisterPage() {
@@ -33,115 +32,114 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-cream px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#F5F5F7] px-4">
       <div
-        className="w-full max-w-sm rounded-xl border border-cloud bg-white shadow-card"
-        style={{ animation: "fadeIn 0.25s ease-out both" }}
+        className="w-full max-w-sm rounded-[18px] bg-white p-12"
+        style={{
+          boxShadow: "0 12px 32px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06)",
+          animation: "fadeIn 0.25s ease-out both",
+        }}
       >
-        {/* Navy header */}
-        <div className="flex flex-col items-center gap-2 rounded-t-xl bg-navy px-8 py-6">
-          <GuidianLogo size={32} strokeColor="white" accentColor="#C98A2A" />
-          <span className="font-display text-xl font-bold text-white tracking-tight">
-            Guidian
-          </span>
-          <p className="font-body text-xs text-mist">Create your account</p>
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <GuidianLogo size={36} strokeColor="#162D4A" accentColor="#C98A2A" />
+          <span className="text-xl font-semibold text-[#1D1D1F]">Guidian</span>
+          <p className="text-sm text-[#6E6E73]">Create your account</p>
         </div>
 
-        <div className="px-8 pb-8 pt-6">
-          {/* Google sign-up */}
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = "https://guidian-api.onrender.com/api/v1/auth/google";
-            }}
-            className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-navy bg-white px-4 text-sm font-medium text-navy transition-colors hover:bg-fog"
-          >
-            <GoogleLogo />
-            Continue with Google
-          </button>
+        {/* Google sign-up */}
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = "https://guidian-api.onrender.com/api/v1/auth/google";
+          }}
+          className="flex h-11 w-full items-center justify-center gap-3 rounded-[10px] border border-[#D2D2D7] bg-white px-4 text-sm font-medium text-[#1D1D1F] transition-colors hover:bg-[#F5F5F7]"
+        >
+          <GoogleLogo />
+          Continue with Google
+        </button>
 
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-cloud" />
-            <span className="font-body text-xs text-steel">or</span>
-            <div className="h-px flex-1 bg-cloud" />
-          </div>
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[#D2D2D7]" />
+          <span className="text-xs text-[#6E6E73]">or</span>
+          <div className="h-px flex-1 bg-[#D2D2D7]" />
+        </div>
 
-          <form onSubmit={onSubmit} className="space-y-4">
-            {/* Full name */}
-            <label className="block space-y-1.5">
-              <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">Full name</span>
+        <form onSubmit={onSubmit} className="space-y-4">
+          {/* Full name */}
+          <label className="block space-y-1.5">
+            <span className="text-[13px] font-medium text-[#6E6E73]">Full name</span>
+            <input
+              type="text"
+              value={fullName}
+              autoComplete="name"
+              onChange={(e) => setFullName(e.target.value)}
+              className="block h-11 w-full rounded-[10px] border border-[#D2D2D7] bg-white px-3 text-sm text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071E3]"
+            />
+          </label>
+
+          {/* Email */}
+          <label className="block space-y-1.5">
+            <span className="text-[13px] font-medium text-[#6E6E73]">Email</span>
+            <input
+              type="email"
+              value={email}
+              required
+              autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)}
+              className="block h-11 w-full rounded-[10px] border border-[#D2D2D7] bg-white px-3 text-sm text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071E3]"
+            />
+          </label>
+
+          {/* Password */}
+          <label className="block space-y-1.5">
+            <span className="text-[13px] font-medium text-[#6E6E73]">Password</span>
+            <div className="relative">
               <input
-                type="text"
-                value={fullName}
-                autoComplete="name"
-                onChange={(e) => setFullName(e.target.value)}
-                className="block h-11 w-full rounded-lg border border-cloud bg-fog px-3 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
-              />
-            </label>
-
-            {/* Email */}
-            <label className="block space-y-1.5">
-              <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">Email</span>
-              <input
-                type="email"
-                value={email}
+                type={showPassword ? "text" : "password"}
+                value={password}
                 required
-                autoComplete="email"
-                onChange={(e) => setEmail(e.target.value)}
-                className="block h-11 w-full rounded-lg border border-cloud bg-fog px-3 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
+                autoComplete="new-password"
+                onChange={(e) => setPassword(e.target.value)}
+                className="block h-11 w-full rounded-[10px] border border-[#D2D2D7] bg-white px-3 pr-10 text-sm text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071E3]"
               />
-            </label>
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6E6E73] hover:text-[#1D1D1F]"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </label>
 
-            {/* Password with show/hide toggle */}
-            <label className="block space-y-1.5">
-              <span className="font-body text-xs font-medium uppercase tracking-[0.15em] text-slate">Password</span>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  required
-                  autoComplete="new-password"
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block h-11 w-full rounded-lg border border-cloud bg-fog px-3 pr-10 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-steel hover:text-ink"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </label>
+          {error && (
+            <p className="rounded-[10px] bg-[#FFF2F1] px-3 py-2 text-sm text-[#FF3B30]">
+              {error}
+            </p>
+          )}
 
-            {error && (
-              <p className="rounded-md bg-error-bg px-3 py-2 text-sm text-error">
-                {error}
-              </p>
-            )}
+          <button
+            type="submit"
+            disabled={register.isPending || login.isPending}
+            className="h-11 w-full rounded-[10px] bg-[#0071E3] text-sm font-medium text-white transition-colors hover:bg-[#0077ED] disabled:opacity-50"
+          >
+            {register.isPending || login.isPending ? "Creating…" : "Create account"}
+          </button>
+        </form>
 
-            <Button
-              type="submit"
-              className="h-11 w-full"
-              disabled={register.isPending || login.isPending}
-            >
-              {register.isPending || login.isPending ? "Creating…" : "Create account"}
-            </Button>
-          </form>
-
-          <p className="mt-5 text-center font-body text-sm text-steel">
-            Already have an account?{" "}
-            <Link href="/login" className="font-medium text-amber underline-offset-4 hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </div>
+        <p className="mt-5 text-center text-sm text-[#6E6E73]">
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-[#0071E3] underline-offset-4 hover:underline">
+            Sign in
+          </Link>
+        </p>
       </div>
 
       <style>{`

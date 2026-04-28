@@ -34,9 +34,9 @@ export default function CoursesPage() {
   if (me.error) {
     return (
       <Shell>
-        <p className="text-steel">
+        <p className="text-[#6E6E73]">
           Please{" "}
-          <Link href="/login" className="text-amber-dim underline">
+          <Link href="/login" className="text-[#0071E3] underline">
             sign in
           </Link>{" "}
           to view courses.
@@ -49,15 +49,14 @@ export default function CoursesPage() {
 
   return (
     <Shell>
-      {/* Page header with amber underline accent */}
-      <div className="pb-4 border-b-2 border-amber inline-block">
-        <h1 className="font-display text-3xl font-bold text-navy">Course catalog</h1>
+      <div className="pb-4 border-b border-[#D2D2D7]">
+        <h1 className="text-3xl font-bold text-[#1D1D1F]">Course catalog</h1>
       </div>
-      <p className="font-body text-steel">Enroll in a course to begin earning CEU hours.</p>
+      <p className="text-[#6E6E73]">Enroll in a course to begin earning CEU hours.</p>
 
-      {courses.isLoading && <p className="font-body text-steel">Loading courses…</p>}
+      {courses.isLoading && <p className="text-[#6E6E73]">Loading courses…</p>}
       {courses.error && (
-        <p className="text-error">Failed to load courses: {String(courses.error)}</p>
+        <p className="text-[#FF3B30]">Failed to load courses: {String(courses.error)}</p>
       )}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -67,26 +66,34 @@ export default function CoursesPage() {
           return (
             <div
               key={course.id}
-              className="flex flex-col rounded-xl border border-cloud bg-white shadow-card overflow-hidden"
+              className="flex flex-col rounded-[18px] bg-white overflow-hidden shadow-card"
+              style={{ borderLeft: `4px solid ${stageColor}` }}
             >
-              {/* Stage color top bar */}
-              <div className="h-1" style={{ backgroundColor: stageColor }} />
               <div className="flex flex-col flex-1 p-5 gap-4">
                 <div className="flex-1">
-                  <h2 className="font-display text-base font-semibold text-navy leading-snug">
+                  <h2 className="text-base font-semibold text-[#1D1D1F] leading-snug">
                     {course.title}
                   </h2>
-                  <p className="mt-2 line-clamp-3 font-body text-sm text-steel">
+                  <p className="mt-2 line-clamp-3 text-sm text-[#6E6E73]">
                     {course.description ?? "No description."}
                   </p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-body text-xs uppercase tracking-[0.12em] text-steel">
+                  <span
+                    className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    style={{
+                      backgroundColor: stageColor + "1A",
+                      color: stageColor,
+                    }}
+                  >
                     {course.ceu_hours} CEU
                   </span>
                   <span
-                    className="rounded-full px-2 py-0.5 font-body text-xs font-medium capitalize"
-                    style={{ backgroundColor: stageColor + "1A", color: stageColor }}
+                    className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
+                    style={{
+                      backgroundColor: stageColor + "1A",
+                      color: stageColor,
+                    }}
                   >
                     {course.status}
                   </span>
@@ -94,7 +101,7 @@ export default function CoursesPage() {
                 {enrolled ? (
                   <Link
                     href={`/courses/${course.id}`}
-                    className="inline-flex items-center justify-center rounded-md bg-amber px-4 py-2 text-sm font-medium text-white shadow-amber hover:bg-amber-light transition-colors"
+                    className="inline-flex items-center justify-center rounded-[10px] bg-[#0071E3] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0077ED]"
                   >
                     Continue →
                   </Link>
@@ -118,14 +125,14 @@ export default function CoursesPage() {
 
 function getStageColor(stage: string): string {
   const map: Record<string, string> = {
-    "pre-college": "#4A80B5",
-    vocational: "#0E7C7B",
-    college: "#3D5A73",
-    certif: "#4A7C6F",
-    licensure: "#162D4A",
-    ce: "#C98A2A",
+    "pre-college": "#5E5CE6",
+    vocational: "#30B0C7",
+    college: "#0071E3",
+    certif: "#34C759",
+    licensure: "#1D1D1F",
+    ce: "#FF9F0A",
   };
-  return map[stage] ?? "#162D4A";
+  return map[stage] ?? "#0071E3";
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
