@@ -21,7 +21,7 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("title", sa.String(255), nullable=False),
         sa.Column("profession", sa.String(128), nullable=False),
-        sa.Column("target_states", postgresql.ARRAY(sa.Text()), nullable=False, server_default="{}"),
+        sa.Column("target_states", postgresql.ARRAY(sa.Text()), nullable=False, server_default="'{}'"),
         sa.Column("ceu_hours", sa.Float(), nullable=False),
         sa.Column("estimated_license_holders", sa.Integer(), nullable=False),
         sa.Column("renewal_frequency_years", sa.Float(), nullable=False),
