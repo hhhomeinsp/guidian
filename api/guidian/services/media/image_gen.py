@@ -35,12 +35,24 @@ _REFERENCE_STYLE_PROMPT = (
 
 
 def _build_prompt(title: str, objectives: list[str]) -> str:
-    obj_summary = "; ".join(objectives[:3]) if objectives else ""
-    parts = [f"Technical educational illustration for a lesson titled: '{title}'."]
-    if obj_summary:
-        parts.append(f"Key concepts to visualize: {obj_summary}.")
-    parts.append(_STYLE_SUFFIX)
-    return " ".join(parts)
+    """
+    Build a hero-image prompt suitable for use as a slide background.
+    Goal: cinematic, atmospheric, dark-toned — looks great under text overlay.
+    NOT a technical diagram.
+    """
+    obj_summary = "; ".join(objectives[:2]) if objectives else ""
+    concept = obj_summary or title
+    return (
+        f"Professional hero image for an online course lesson about: '{title}'. "
+        f"Theme: {concept}. "
+        "Cinematic, atmospheric photography style. "
+        "Dark, muted tones — navy blue, deep charcoal, slate. "
+        "Soft background suitable for text overlay. "
+        "No people. No text. No labels. No diagrams. "
+        "Think: professional real-estate inspection tools on a dark surface, "
+        "or the exterior of a house at dusk, or building materials with dramatic lighting. "
+        "High quality, wide format, clean composition."
+    )
 
 
 def _build_diagram_prompt(title: str, objectives: list[str]) -> str:
@@ -141,11 +153,9 @@ def generate_and_upload(
 
     image_bytes: bytes | None = None
 
-    diagram_ref = find_reference_url(title, objectives)
-    if diagram_ref:
-        logger.info("Diagram library match for lesson %s (%s) — using detailed diagram prompt", lesson_id, title)
-        prompt = _build_diagram_prompt(title, objectives)
-        image_bytes = _generate_text_only(prompt)
+    # NOTE: We intentionally skip the diagram reference library for hero images.
+    # Diagram references are technical illustrations — they look terrible as
+    # slide backgrounds. Hero images should be cinematic/atmospheric.
 
     if image_bytes is None and reference_url:
         try:

@@ -321,17 +321,19 @@ function TitleSlide({
 }) {
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden">
+      {/* Background: image or brand gradient */}
       {imageUrl ? (
         <img
           src={imageUrl}
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover opacity-30"
         />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary/90 via-secondary/70 to-secondary/40" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent" />
+      ) : null}
+      {/* Always show solid brand gradient underneath */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#162D4A] via-[#1E3D5C] to-[#0D1C2E]" />
+      {/* Subtle overlay to blend image into brand colors */}
+      {imageUrl && <div className="absolute inset-0 bg-[#162D4A]/60" />}
 
       {clockMinutes != null && clockMinutes > 0 && (
         <div className="absolute right-6 top-6 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm">
