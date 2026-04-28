@@ -27,7 +27,7 @@ See VISION.md for full product synopsis.
 
 ## Live URLs
 
-- Web: https://guidian-web.onrender.com
+- Web: https://guidian.io
 - API: https://guidian-api.onrender.com
 - API docs: https://guidian-api.onrender.com/docs
 
@@ -56,7 +56,7 @@ POST /api/v1/generation/courses   → Trigger Celery course generation job
 
 ## Google OAuth
 
-- Redirect URI registered in Google Cloud Console: `https://guidian-api.onrender.com/api/v1/auth/google/callback`
+- Redirect URI registered in Google Cloud Console: `https://guidian.io/api/v1/auth/google/callback`
 - Frontend callback page: `/auth/callback` — reads tokens from URL params, stores, redirects to `/courses`
 - Env vars on guidian-api: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_BASE_URL`, `API_BASE_URL`
 
