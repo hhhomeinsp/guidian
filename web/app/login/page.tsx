@@ -23,7 +23,8 @@ export default function LoginPage() {
     try {
       const pair = await login.mutateAsync({ email, password });
       setTokens(pair.access_token, pair.refresh_token, rememberMe);
-      router.push("/courses");
+      // Full reload clears React Query cache and ensures iOS picks up the new token
+      window.location.href = "/courses";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     }

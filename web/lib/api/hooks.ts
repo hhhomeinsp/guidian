@@ -43,6 +43,8 @@ export function useMe() {
     queryKey: ["me"],
     queryFn: () => apiFetch<UserRead>("/users/me"),
     retry: false,
+    enabled: !!getAccessToken(),
+    staleTime: 30000,
   });
 }
 

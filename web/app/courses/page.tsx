@@ -30,8 +30,8 @@ export default function CoursesPage() {
     }
   }, [me.data, profile.data, router]);
 
-  if (me.isLoading) return <Shell>Loading…</Shell>;
-  if (me.error) {
+  if (me.isLoading || (!me.data && !me.error)) return <Shell>Loading…</Shell>;
+  if (me.error || !me.data) {
     return (
       <Shell>
         <p className="text-[#6E6E73]">
