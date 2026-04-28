@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { AppHeader } from "@/components/AppHeader";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import { LearnerHydrator } from "@/components/LearnerHydrator";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <LearnerHydrator />
           <AppHeader />
+          <ConsentBanner />
           <div id="main-content">{children}</div>
         </Providers>
       </body>

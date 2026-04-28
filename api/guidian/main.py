@@ -16,6 +16,8 @@ from guidian.routers import (
     users,
     xapi,
 )
+from guidian.routers.privacy import router as privacy_router
+from guidian.routers.scorm import router as scorm_router
 
 app = FastAPI(title=settings.PROJECT_NAME, version="0.1.0")
 
@@ -47,3 +49,5 @@ app.include_router(xapi.router, prefix=api_prefix)
 app.include_router(admin.router, prefix=api_prefix)
 app.include_router(learner.router, prefix=api_prefix)
 app.include_router(generation.router, prefix=api_prefix)
+app.include_router(privacy_router, prefix=api_prefix)
+app.include_router(scorm_router, prefix=api_prefix)

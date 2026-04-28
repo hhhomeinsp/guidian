@@ -78,7 +78,7 @@ export default function AdminAIJobsPage() {
                   {j.course_id ? (
                     <Link
                       href={`/admin/courses/${j.course_id}`}
-                      className="font-mono text-xs text-amber hover:underline"
+                      className="font-mono text-xs text-amber-dim hover:underline"
                     >
                       {j.course_id.slice(0, 8)}
                     </Link>

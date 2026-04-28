@@ -40,6 +40,12 @@ export function AppHeader() {
           >
             Activity
           </Link>
+          <Link
+            href="/settings"
+            className="hidden rounded-md px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:inline-flex"
+          >
+            Settings
+          </Link>
           {me && (me.role === "admin" || me.role === "org_admin") && (
             <Link
               href="/admin"

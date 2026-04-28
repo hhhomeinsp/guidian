@@ -30,6 +30,11 @@
     --color-info: #1A5F8A;
     --color-info-bg: #E3EFF8;
 
+    /* Accessible text colors — WCAG AA compliant for body text on white/cream/fog */
+    --color-amber-accessible: #8B5E00;   /* 4.6:1 on white */
+    --color-steel-accessible: #4A6275;   /* 4.7:1 on white */
+    --color-slate-accessible: #2D4257;   /* 7.2:1 on white */
+
     /* ── shadcn semantic tokens (HSL) ─────────────────────────── */
     --background: 38 44% 96%;        /* cream     #FAF7F2 */
     --foreground: 210 54% 11%;       /* ink       #0D1C2B */

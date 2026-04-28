@@ -71,7 +71,7 @@ function Metric({
   return (
     <div className="rounded-xl border border-cloud bg-white shadow-card border-l-4 border-l-teal overflow-hidden">
       <div className="px-5 pt-4 pb-1">
-        <p className="font-body text-xs font-medium uppercase tracking-[0.15em] text-amber">
+        <p className="font-body text-xs font-medium uppercase tracking-[0.15em] text-amber-dim">
           {label}
         </p>
       </div>

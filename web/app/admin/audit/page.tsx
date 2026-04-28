@@ -8,7 +8,7 @@ const EVENT_TONES: Record<string, string> = {
   "lesson.completed": "text-success",
   "quiz.attempted": "text-warning",
   "quiz.passed": "text-success",
-  "certificate.requested": "text-amber",
+  "certificate.requested": "text-amber-dim",
   "certificate.issued": "text-teal",
   "certificate.failed": "text-error",
   "compliance.evaluated": "text-steel",

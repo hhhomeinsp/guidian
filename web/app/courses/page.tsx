@@ -36,7 +36,7 @@ export default function CoursesPage() {
       <Shell>
         <p className="text-steel">
           Please{" "}
-          <Link href="/login" className="text-amber underline">
+          <Link href="/login" className="text-amber-dim underline">
             sign in
           </Link>{" "}
           to view courses.
