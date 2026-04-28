@@ -48,6 +48,12 @@ _STATE_REQUIREMENTS = [
 
 
 def upgrade() -> None:
+    # Skip if already seeded
+    bind = op.get_bind()
+    count = bind.execute(sa.text("SELECT COUNT(*) FROM course_opportunities")).scalar()
+    if count and count > 0:
+        return
+
     opp_table = sa.table(
         "course_opportunities",
         sa.column("id", postgresql.UUID(as_uuid=True)),

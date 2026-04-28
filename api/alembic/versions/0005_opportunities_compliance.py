@@ -16,66 +16,70 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "course_opportunities",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("title", sa.String(255), nullable=False),
-        sa.Column("profession", sa.String(128), nullable=False),
-        sa.Column("target_states", postgresql.ARRAY(sa.Text()), nullable=False, server_default="'{}'"),
-        sa.Column("ceu_hours", sa.Float(), nullable=False),
-        sa.Column("estimated_license_holders", sa.Integer(), nullable=False),
-        sa.Column("renewal_frequency_years", sa.Float(), nullable=False),
-        sa.Column("avg_price_per_hour", sa.Float(), nullable=False),
-        sa.Column("competition_level", sa.String(16), nullable=False),
-        sa.Column("content_reuse_score", sa.Integer(), nullable=False),
-        sa.Column("status", sa.String(32), nullable=False, server_default="pipeline"),
-        sa.Column("course_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("courses.id", ondelete="SET NULL"), nullable=True),
-        sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-    )
+    # Raw SQL with IF NOT EXISTS — fully idempotent, safe to re-run
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS course_opportunities (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            title VARCHAR(255) NOT NULL,
+            profession VARCHAR(128) NOT NULL,
+            target_states TEXT[] NOT NULL DEFAULT '{}',
+            ceu_hours FLOAT NOT NULL,
+            estimated_license_holders INTEGER NOT NULL,
+            renewal_frequency_years FLOAT NOT NULL,
+            avg_price_per_hour FLOAT NOT NULL,
+            competition_level VARCHAR(16) NOT NULL,
+            content_reuse_score INTEGER NOT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'pipeline',
+            course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    """)
 
-    op.create_table(
-        "state_requirements",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("state_code", sa.String(2), nullable=False),
-        sa.Column("profession", sa.String(128), nullable=False),
-        sa.Column("regulatory_body", sa.String(255), nullable=False),
-        sa.Column("regulatory_url", sa.String(512), nullable=False),
-        sa.Column("provider_app_url", sa.String(512), nullable=True),
-        sa.Column("course_app_url", sa.String(512), nullable=True),
-        sa.Column("application_fee", sa.Float(), nullable=True),
-        sa.Column("renewal_period_years", sa.Float(), nullable=False),
-        sa.Column("online_allowed", sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column("proctoring_required", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column("min_passing_score", sa.Float(), nullable=False, server_default="0.70"),
-        sa.Column("min_seat_time_minutes", sa.Integer(), nullable=True),
-        sa.Column("submission_format", sa.String(32), nullable=False),
-        sa.Column("processing_days", sa.Integer(), nullable=False),
-        sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.UniqueConstraint("state_code", "profession", name="uq_state_req_state_profession"),
-    )
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS state_requirements (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            state_code VARCHAR(2) NOT NULL,
+            profession VARCHAR(128) NOT NULL,
+            regulatory_body VARCHAR(255) NOT NULL,
+            regulatory_url VARCHAR(512) NOT NULL,
+            provider_app_url VARCHAR(512),
+            course_app_url VARCHAR(512),
+            application_fee FLOAT,
+            renewal_period_years FLOAT NOT NULL,
+            online_allowed BOOLEAN NOT NULL DEFAULT TRUE,
+            proctoring_required BOOLEAN NOT NULL DEFAULT FALSE,
+            min_passing_score FLOAT NOT NULL DEFAULT 0.70,
+            min_seat_time_minutes INTEGER,
+            submission_format VARCHAR(32) NOT NULL,
+            processing_days INTEGER NOT NULL,
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            CONSTRAINT uq_state_req_state_profession UNIQUE (state_code, profession)
+        )
+    """)
 
-    op.create_table(
-        "compliance_submissions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("course_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("courses.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("state_code", sa.String(2), nullable=False),
-        sa.Column("profession", sa.String(128), nullable=False),
-        sa.Column("status", sa.String(32), nullable=False, server_default="draft"),
-        sa.Column("submitted_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("approved_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("approval_number", sa.String(128), nullable=True),
-        sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-    )
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS compliance_submissions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+            state_code VARCHAR(2) NOT NULL,
+            profession VARCHAR(128) NOT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'draft',
+            submitted_at TIMESTAMPTZ,
+            approved_at TIMESTAMPTZ,
+            expires_at TIMESTAMPTZ,
+            approval_number VARCHAR(128),
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    """)
 
 
 def downgrade() -> None:
-    op.drop_table("compliance_submissions")
-    op.drop_table("state_requirements")
-    op.drop_table("course_opportunities")
+    op.execute("DROP TABLE IF EXISTS compliance_submissions")
+    op.execute("DROP TABLE IF EXISTS state_requirements")
+    op.execute("DROP TABLE IF EXISTS course_opportunities")
