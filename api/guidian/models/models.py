@@ -121,6 +121,7 @@ class Lesson(Base, UUIDMixin, TimestampMixin):
     clock_minutes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     requires_completion: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     module: Mapped[Module] = relationship(back_populates="lessons")
 

@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -112,6 +113,47 @@ async def issue_certificate(
     await db.commit()
     await db.refresh(cert)
     return _to_read(cert)
+
+
+class VerifyResponse(BaseModel):
+    valid: bool
+    learner_name: str
+    course_title: str
+    ceu_hours: float
+    completion_date: str
+    accrediting_body: str | None
+
+
+@router.get("/certificates/verify/{verification_code}", response_model=VerifyResponse)
+async def verify_certificate(
+    verification_code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    cert = (
+        await db.execute(
+            select(Certificate).where(Certificate.verification_code == verification_code)
+        )
+    ).scalar_one_or_none()
+    if not cert:
+        return VerifyResponse(
+            valid=False,
+            learner_name="",
+            course_title="",
+            ceu_hours=0.0,
+            completion_date="",
+            accrediting_body=None,
+        )
+    user = (await db.execute(select(User).where(User.id == cert.user_id))).scalar_one_or_none()
+    course = (await db.execute(select(Course).where(Course.id == cert.course_id))).scalar_one_or_none()
+    meta = cert.metadata_ or {}
+    return VerifyResponse(
+        valid=meta.get("status") == "issued",
+        learner_name=(user.full_name or user.email) if user else "",
+        course_title=course.title if course else "",
+        ceu_hours=cert.ceu_hours,
+        completion_date=meta.get("completion_date") or cert.issued_at.date().isoformat(),
+        accrediting_body=course.accrediting_body if course else None,
+    )
 
 
 @router.get("/certificates/me", response_model=list[CertificateRead])

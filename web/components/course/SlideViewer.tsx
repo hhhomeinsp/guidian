@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Play,
   Pause,
+  FileText,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,7 @@ export interface SlideViewerProps {
     image_url?: string | null;
     audio_url?: string | null;
     clock_minutes?: number;
+    transcript?: string | null;
   };
   lessonId: string;
   onComplete: () => void;
@@ -47,10 +50,6 @@ interface ParsedSection {
 // MDX body renderer
 // ---------------------------------------------------------------------------
 
-/**
- * Pure function — parses a subset of markdown into React nodes.
- * Handles: ### headings, > blockquotes, - /* bullet lists, **bold**, paragraphs.
- */
 function renderMdxBody(text: string): React.ReactNode {
   const lines = text.split("\n");
   const nodes: React.ReactNode[] = [];
@@ -92,7 +91,6 @@ function renderMdxBody(text: string): React.ReactNode {
   while (i < lines.length) {
     const line = lines[i];
 
-    // ### subheading
     if (/^###\s/.test(line)) {
       nodes.push(
         <h3
@@ -106,7 +104,6 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
-    // > blockquote callout
     if (/^>\s?/.test(line)) {
       const content = line.replace(/^>\s*/, "");
       const isWarning = /^[⚠️🚨]|^Warning|^CAUTION/i.test(content);
@@ -128,14 +125,12 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
-    // Markdown table — collect header + separator + rows
     if (/^\|/.test(line.trim())) {
       const tableLines: string[] = [];
       while (i < lines.length && /^\|/.test(lines[i].trim())) {
         tableLines.push(lines[i]);
         i++;
       }
-      // Parse rows, skip separator rows (|----|----|
       const rows = tableLines.filter(l => !/^\|[-:\s|]+\|?$/.test(l.trim()));
       if (rows.length === 0) continue;
       const parseRow = (l: string) =>
@@ -174,7 +169,6 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
-    // Bullet list — group consecutive items
     if (/^[-*]\s/.test(line)) {
       const items: string[] = [];
       while (i < lines.length && /^[-*]\s/.test(lines[i])) {
@@ -196,7 +190,6 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
-    // Numbered list — collect consecutive items into step cards
     if (/^\d+\.\s/.test(line)) {
       const steps: string[] = [];
       const startI = i;
@@ -219,13 +212,11 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
-    // Blank line
     if (line.trim() === "") {
       i++;
       continue;
     }
 
-    // Key insight pull quote — entire line is **text**
     if (/^\*\*[^*]+\*\*\.?$/.test(line.trim())) {
       const text = line.trim().replace(/^\*\*/, "").replace(/\*\*\.?$/, "");
       nodes.push(
@@ -237,7 +228,6 @@ function renderMdxBody(text: string): React.ReactNode {
       continue;
     }
 
-    // Regular paragraph — auto-bullet long sentences (> 120 chars with multiple sentences)
     if (line.trim().length > 140 && line.includes(". ")) {
       const sentences = line.trim().split(/\.\s+/).map((s, i, arr) => i < arr.length - 1 ? s + '.' : s).filter(s => s.trim().length > 0);
       if (sentences.length >= 3) {
@@ -271,7 +261,6 @@ function renderMdxBody(text: string): React.ReactNode {
 // ---------------------------------------------------------------------------
 
 function parseSections(mdxContent: string): ParsedSection[] {
-  // Split on lines that start with "## " (may be mid-string after a newline)
   const raw = mdxContent.split(/\n(?=## )/);
   const sections: ParsedSection[] = [];
 
@@ -284,7 +273,6 @@ function parseSections(mdxContent: string): ParsedSection[] {
         body: lines.slice(1).join("\n").trim(),
       });
     } else if (firstLine !== "") {
-      // Content before the first ## (treat as intro with no heading)
       sections.push({
         heading: "",
         body: chunk.trim(),
@@ -335,7 +323,6 @@ function TitleSlide({
 }) {
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden">
-      {/* Hero background */}
       {imageUrl ? (
         <img
           src={imageUrl}
@@ -346,18 +333,15 @@ function TitleSlide({
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/90 via-secondary/70 to-secondary/40" />
       )}
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent" />
 
-      {/* Clock badge */}
       {clockMinutes != null && clockMinutes > 0 && (
         <div className="absolute right-6 top-6 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm">
-          <Clock className="h-3.5 w-3.5" />
+          <Clock className="h-3.5 w-3.5" aria-hidden />
           <span>{clockMinutes} min</span>
         </div>
       )}
 
-      {/* Content */}
       <div className="relative z-10 flex max-w-2xl flex-col items-center gap-6 px-8 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 24 }}
@@ -387,7 +371,7 @@ function TitleSlide({
                 }}
                 className="flex items-start gap-2 text-white/80"
               >
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-white/70" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-white/70" aria-hidden />
                 <span className="text-sm leading-snug">{obj}</span>
               </motion.li>
             ))}
@@ -403,7 +387,7 @@ function TitleSlide({
             onClick={onNext}
             className="rounded-full bg-white px-8 py-3 text-base font-semibold text-primary shadow-lg hover:bg-white/90"
           >
-            Start <ArrowRight className="ml-2 h-4 w-4" />
+            Start <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
           </Button>
         </motion.div>
       </div>
@@ -424,25 +408,32 @@ function ContentSlide({
   totalSlides: number;
   onTap?: (e: React.MouseEvent) => void;
 }) {
-  // Scroll content back to top whenever the slide changes
   const bodyRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     bodyRef.current?.scrollTo({ top: 0 });
   }, [heading]);
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div
+      className="flex h-full w-full flex-col"
+      aria-label={`Slide ${slideNumber} of ${totalSlides}: ${heading}`}
+    >
       {/* Sticky slide header */}
       <div className="shrink-0 bg-gradient-to-r from-secondary to-secondary/90 px-6 py-4">
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium tracking-widest text-white/50 uppercase">
             {slideNumber} of {totalSlides}
           </span>
-          <h2 className="text-lg font-bold leading-snug text-white md:text-xl">{heading}</h2>
+          <h2
+            className="text-lg font-bold leading-snug text-white md:text-xl"
+            aria-live="polite"
+          >
+            {heading}
+          </h2>
         </div>
       </div>
 
-      {/* Scrollable body — fills remaining space; tap anywhere to pause/play audio */}
+      {/* Scrollable body */}
       <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-6 pb-20 md:px-8" onClick={onTap}>
         {renderMdxBody(body)}
       </div>
@@ -465,7 +456,7 @@ function SummarySlide({
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
         className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10"
       >
-        <CheckCircle2 className="h-10 w-10 text-primary" />
+        <CheckCircle2 className="h-10 w-10 text-primary" aria-hidden />
       </motion.div>
 
       <motion.h2
@@ -496,7 +487,7 @@ function SummarySlide({
               }}
               className="flex items-start gap-2.5"
             >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
               <span className="text-sm text-foreground/80">{obj}</span>
             </motion.li>
           ))}
@@ -513,7 +504,7 @@ function SummarySlide({
           size="lg"
           className="rounded-full px-10 py-4 text-base font-semibold"
         >
-          Take Quiz <ArrowRight className="ml-2 h-5 w-5" />
+          Take Quiz <ArrowRight className="ml-2 h-5 w-5" aria-hidden />
         </Button>
       </motion.div>
     </div>
@@ -533,7 +524,6 @@ function DotIndicators({
   current: number;
   onDotClick: (idx: number) => void;
 }) {
-  // Show at most 9 dots; beyond that collapse to just a counter
   const MAX_DOTS = 9;
   if (total > MAX_DOTS) return null;
 
@@ -557,23 +547,91 @@ function DotIndicators({
 }
 
 // ---------------------------------------------------------------------------
+// Inactivity modal
+// ---------------------------------------------------------------------------
+
+function InactivityModal({
+  variant,
+  onResume,
+}: {
+  variant: "warn" | "paused";
+  onResume: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="inactivity-title"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+    >
+      <div className="mx-4 max-w-sm rounded-2xl bg-white p-8 shadow-xl text-center">
+        <Clock className="mx-auto mb-4 h-10 w-10 text-amber-500" aria-hidden />
+        <h3 id="inactivity-title" className="mb-2 text-xl font-bold text-foreground">
+          {variant === "warn" ? "Still there?" : "Session paused"}
+        </h3>
+        <p className="mb-6 text-sm text-muted-foreground">
+          {variant === "warn"
+            ? "Your session will pause in 5 minutes to comply with seat-time requirements."
+            : "Resume when ready."}
+        </p>
+        <Button onClick={onResume} className="w-full rounded-full">
+          Resume
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main SlideViewer
 // ---------------------------------------------------------------------------
+
+const INACTIVITY_WARN_MS = 30 * 60 * 1000;  // 30 min
+const INACTIVITY_PAUSE_MS = 35 * 60 * 1000; // 35 min (30 + 5)
+const INACTIVITY_POLL_MS = 60 * 1000;        // check every 1 min
 
 export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }: SlideViewerProps) {
   const sections = React.useMemo(() => parseSections(lesson.mdx_content), [lesson.mdx_content]);
 
-  // Public endpoint — auth removed, presigned R2 redirect handles security
   const audioSrc = lesson.audio_url
     ? `${API_BASE_URL}/courses/lessons/${lessonId}/audio`
     : null;
 
-  // Tap-to-pause: hold a ref to AudioPlayer's toggle function
   const audioToggleRef = React.useRef<(() => void) | null>(null);
+  const audioPlayingRef = React.useRef(false);
   const [audioPlaying, setAudioPlaying] = React.useState(false);
+  const handleAudioPlayingChange = React.useCallback((playing: boolean) => {
+    audioPlayingRef.current = playing;
+    setAudioPlaying(playing);
+  }, []);
+
+  // Transcript toggle
+  const [showTranscript, setShowTranscript] = React.useState(false);
+
+  // Inactivity tracking
+  const lastActiveRef = React.useRef<number>(Date.now());
+  const [inactivityState, setInactivityState] = React.useState<"active" | "warn" | "paused">("active");
+
+  const resetActivity = React.useCallback(() => {
+    lastActiveRef.current = Date.now();
+    setInactivityState("active");
+  }, []);
+
+  React.useEffect(() => {
+    const id = setInterval(() => {
+      const idle = Date.now() - lastActiveRef.current;
+      if (idle >= INACTIVITY_PAUSE_MS) {
+        setInactivityState("paused");
+        // Pause audio if currently playing
+        if (audioPlayingRef.current && audioToggleRef.current) audioToggleRef.current();
+      } else if (idle >= INACTIVITY_WARN_MS) {
+        setInactivityState(prev => prev === "active" ? "warn" : prev);
+      }
+    }, INACTIVITY_POLL_MS);
+    return () => clearInterval(id);
+  }, []);
 
   const handleContentTap = React.useCallback((e: React.MouseEvent) => {
-    // Only trigger on direct taps — not on buttons, links, or interactive elements
     const target = e.target as HTMLElement;
     if (target.closest('button, a, input, select, textarea')) return;
     if (audioSrc && audioToggleRef.current) {
@@ -581,12 +639,10 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
     }
   }, [audioSrc]);
 
-  // Build slide list: [title, ...content, summary]
-  const totalSlides = sections.length + 2; // +2 for title + summary
+  const totalSlides = sections.length + 2;
   const [currentSlide, setCurrentSlide] = React.useState(0);
-  const [direction, setDirection] = React.useState(1); // 1 = forward, -1 = backward
+  const [direction, setDirection] = React.useState(1);
 
-  // Touch tracking
   const touchStartX = React.useRef<number>(0);
 
   const goTo = React.useCallback(
@@ -594,8 +650,9 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
       const clamped = Math.max(0, Math.min(totalSlides - 1, idx));
       setDirection(clamped > currentSlide ? 1 : -1);
       setCurrentSlide(clamped);
+      resetActivity();
     },
-    [currentSlide, totalSlides],
+    [currentSlide, totalSlides, resetActivity],
   );
 
   const goNext = React.useCallback(() => goTo(currentSlide + 1), [currentSlide, goTo]);
@@ -606,20 +663,21 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") goNext();
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") goPrev();
+      resetActivity();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [goNext, goPrev]);
+  }, [goNext, goPrev, resetActivity]);
 
-  // Touch/swipe navigation
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    resetActivity();
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(delta) > 40) {
-      if (delta < 0) goNext(); // swipe left → next
-      else goPrev(); // swipe right → prev
+      if (delta < 0) goNext();
+      else goPrev();
     }
   };
 
@@ -627,16 +685,28 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
   const isSummarySlide = currentSlide === totalSlides - 1;
   const isContentSlide = !isTitleSlide && !isSummarySlide;
 
-  const contentSectionIndex = currentSlide - 1; // 0-based index into sections[]
+  const contentSectionIndex = currentSlide - 1;
+  const currentHeading = isContentSlide && sections[contentSectionIndex]
+    ? sections[contentSectionIndex].heading
+    : isTitleSlide ? lesson.title : "Summary";
 
   return (
     <div
       className={cn("flex flex-col h-full", className)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onMouseMove={resetActivity}
     >
-      {/* Thin progress bar — sits below navbar */}
-      <div className="shrink-0 h-1 w-full bg-muted">
+      {/* Skip link */}
+      <a
+        href="#slide-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-white focus:text-sm"
+      >
+        Skip to content
+      </a>
+
+      {/* Thin progress bar */}
+      <div className="shrink-0 h-1 w-full bg-muted" role="progressbar" aria-valuenow={currentSlide + 1} aria-valuemin={1} aria-valuemax={totalSlides} aria-label="Lesson progress">
         <div
           className="h-full bg-primary transition-all duration-300"
           style={{ width: `${((currentSlide + 1) / totalSlides) * 100}%` }}
@@ -644,9 +714,8 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
       </div>
 
       {/* Slide area */}
-      <div className="flex-1 overflow-hidden relative bg-background">
+      <div id="slide-content" className="flex-1 overflow-hidden relative bg-background" role="main">
 
-        {/* Slide counter (top-right, hidden on title slide where it would clash) */}
         {!isTitleSlide && (
           <div className="absolute right-4 top-4 z-20 hidden items-center gap-2 md:flex">
             {onBack && currentSlide === 0 && (
@@ -655,8 +724,9 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
                 size="sm"
                 onClick={onBack}
                 className="text-muted-foreground"
+                aria-label="Go back"
               >
-                <ArrowLeft className="mr-1 h-4 w-4" /> Back
+                <ArrowLeft className="mr-1 h-4 w-4" aria-hidden /> Back
               </Button>
             )}
             <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -692,7 +762,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
                 heading={sections[contentSectionIndex].heading}
                 body={sections[contentSectionIndex].body}
                 slideNumber={currentSlide}
-                totalSlides={totalSlides - 2} // exclude title + summary
+                totalSlides={totalSlides - 2}
                 onTap={handleContentTap}
               />
             )}
@@ -703,7 +773,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
           </motion.div>
         </AnimatePresence>
 
-        {/* Left arrow — hidden on mobile (use bottom bar instead) */}
+        {/* Left arrow */}
         {currentSlide > 0 && (
           <button
             aria-label="Previous slide"
@@ -716,11 +786,11 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             )}
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-6 w-6" aria-hidden />
           </button>
         )}
 
-        {/* Right arrow — hidden on mobile */}
+        {/* Right arrow */}
         {currentSlide < totalSlides - 1 && !isTitleSlide && (
           <button
             aria-label="Next slide"
@@ -733,11 +803,11 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             )}
           >
-            <ChevronRight className="h-6 w-6" />
+            <ChevronRight className="h-6 w-6" aria-hidden />
           </button>
         )}
 
-        {/* Dot indicators — hidden on mobile (use bottom nav bar) */}
+        {/* Dot indicators */}
         <div className="absolute bottom-5 left-0 right-0 z-20 hidden md:flex justify-center">
           <DotIndicators
             total={totalSlides}
@@ -747,37 +817,79 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
         </div>
 
         {/* Mobile bottom nav bar */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 flex md:hidden items-center justify-between border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+        <nav
+          role="navigation"
+          aria-label="Slide navigation"
+          className="absolute bottom-0 left-0 right-0 z-20 flex md:hidden items-center justify-between border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm"
+        >
           <button
             onClick={goPrev}
             disabled={currentSlide === 0}
+            aria-label="Previous slide"
             className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-foreground disabled:opacity-30 active:bg-muted"
           >
-            <ChevronLeft className="h-4 w-4" /> Prev
+            <ChevronLeft className="h-4 w-4" aria-hidden /> Prev
           </button>
-          <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+          <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase" aria-hidden>
             {currentSlide + 1} / {totalSlides}
           </span>
           <button
             onClick={goNext}
             disabled={currentSlide >= totalSlides - 1}
+            aria-label="Next slide"
             className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-30 active:bg-primary/80"
           >
-            Next <ChevronRight className="h-4 w-4" />
+            Next <ChevronRight className="h-4 w-4" aria-hidden />
           </button>
-        </div>
+        </nav>
+
+        {/* Inactivity modal */}
+        {inactivityState !== "active" && (
+          <InactivityModal
+            variant={inactivityState}
+            onResume={resetActivity}
+          />
+        )}
       </div>
 
       {/* Sticky audio bar */}
       {audioSrc && (
-        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-4 py-2.5">
-          <AudioPlayer
-            src={audioSrc}
-            title={lesson.title}
-            autoPlay
-            onToggleRef={audioToggleRef}
-            onPlayingChange={setAudioPlaying}
-          />
+        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm">
+          <div className="flex items-center gap-2 px-4 py-2.5">
+            <div className="flex-1 min-w-0">
+              <AudioPlayer
+                src={audioSrc}
+                autoPlay
+                onToggleRef={audioToggleRef}
+                onPlayingChange={handleAudioPlayingChange}
+              />
+            </div>
+            {lesson.transcript && (
+              <button
+                onClick={() => setShowTranscript(v => !v)}
+                aria-label={showTranscript ? "Hide transcript" : "Show transcript"}
+                aria-expanded={showTranscript}
+                className={cn(
+                  "shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                  showTranscript
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <FileText className="h-3.5 w-3.5" aria-hidden />
+                Transcript
+              </button>
+            )}
+          </div>
+
+          {/* Transcript panel */}
+          {showTranscript && lesson.transcript && (
+            <div className="border-t border-border bg-amber-50 px-4 py-3 max-h-40 overflow-y-auto">
+              <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-wrap">
+                {lesson.transcript}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -785,7 +897,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
       {audioSrc && audioPlaying && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-30 opacity-0 transition-opacity" id="tap-hint">
           <div className="rounded-full bg-black/40 p-4 backdrop-blur-sm">
-            <Play className="h-8 w-8 text-white" />
+            <Play className="h-8 w-8 text-white" aria-hidden />
           </div>
         </div>
       )}

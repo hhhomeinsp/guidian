@@ -40,6 +40,8 @@ class LessonRead(LessonCreate):
     id: UUID
     module_id: UUID
     audio_url: str | None = None
+    image_url: str | None = None
+    transcript: str | None = None
     version: int
 
 

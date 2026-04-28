@@ -16,6 +16,7 @@ import type {
   CourseGenerationRequest,
   Enrollment,
   GenerationJobRead,
+  IdentityVerifyRequest,
   LearnerProfile,
   Lesson,
   LessonProgressRead,
@@ -35,6 +36,17 @@ export function useMe() {
     queryKey: ["me"],
     queryFn: () => apiFetch<UserRead>("/users/me"),
     retry: false,
+  });
+}
+
+export function useUpdateIdentity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: IdentityVerifyRequest) =>
+      apiFetch<UserRead>("/users/me/identity", { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
   });
 }
 

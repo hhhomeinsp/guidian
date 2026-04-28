@@ -71,8 +71,9 @@ def synthesize_lesson_audio(self, course_id: str) -> None:
         )
         for lesson in lessons:
             try:
-                key = synthesize_and_upload(lesson.id, lesson.title, lesson.mdx_content)
+                key, script = synthesize_and_upload(lesson.id, lesson.title, lesson.mdx_content)
                 lesson.audio_url = key
+                lesson.transcript = script
                 db.commit()
                 logger.info("Audio generated for lesson %s → %s", lesson.id, key)
             except Exception as exc:

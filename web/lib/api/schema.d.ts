@@ -39,6 +39,7 @@ export interface Lesson {
   objectives: string[];
   mdx_content: string;
   audio_url?: string | null;
+  transcript?: string | null;
   diagrams: Diagram[];
   quiz: QuizPayload;
   style_tags: LearningStyle[];
@@ -80,6 +81,18 @@ export interface TokenPair {
 
 export type UserRole = "learner" | "instructor" | "admin" | "org_admin";
 
+export interface IdentityData {
+  full_name: string;
+  license_number?: string | null;
+  last_four_ssn?: string | null;
+}
+
+export interface UserProfile {
+  identity_verified_at?: string | null;
+  identity_data?: IdentityData | null;
+  [key: string]: unknown;
+}
+
 export interface UserRead {
   id: UUID;
   email: string;
@@ -88,6 +101,13 @@ export interface UserRead {
   is_active: boolean;
   organization_id?: UUID | null;
   created_at: ISODate;
+  profile?: UserProfile | null;
+}
+
+export interface IdentityVerifyRequest {
+  full_name: string;
+  license_number?: string | null;
+  last_four_ssn?: string | null;
 }
 
 export interface Enrollment {

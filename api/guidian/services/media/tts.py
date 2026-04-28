@@ -31,10 +31,10 @@ def _s3_client():
     )
 
 
-def synthesize_and_upload(lesson_id: uuid.UUID, title: str, mdx_content: str) -> str:
+def synthesize_and_upload(lesson_id: uuid.UUID, title: str, mdx_content: str) -> tuple[str, str]:
     """
-    Call ElevenLabs TTS, upload the MP3 to R2, return the S3 object key.
-    Falls back silently if ELEVENLABS_API_KEY is not configured.
+    Call ElevenLabs TTS, upload the MP3 to R2.
+    Returns (s3_key, script) so the caller can persist the transcript.
     """
     if not settings.ELEVENLABS_API_KEY:
         raise RuntimeError("ELEVENLABS_API_KEY is not configured")
@@ -65,4 +65,4 @@ def synthesize_and_upload(lesson_id: uuid.UUID, title: str, mdx_content: str) ->
         key,
         ExtraArgs={"ContentType": "audio/mpeg"},
     )
-    return key
+    return key, script

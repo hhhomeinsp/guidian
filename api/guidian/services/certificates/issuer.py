@@ -43,9 +43,26 @@ def render_and_persist_certificate(db: Session, certificate_id: UUID) -> Certifi
     renders the PDF, uploads to S3, updates the row, and appends an audit
     event — all in a single DB transaction.
     """
+    from datetime import timezone
+
     cert = db.execute(select(Certificate).where(Certificate.id == certificate_id)).scalar_one()
     course = db.execute(select(Course).where(Course.id == cert.course_id)).scalar_one()
     user = db.execute(select(User).where(User.id == cert.user_id)).scalar_one()
+
+    completion_date = cert.issued_at.astimezone(timezone.utc).date().isoformat()
+    expiry_date = cert.expires_at.astimezone(timezone.utc).date().isoformat() if cert.expires_at else None
+    verify_url = f"https://guidian.io/verify/{cert.verification_code}"
+
+    enriched_meta: dict = dict(cert.metadata_ or {})
+    enriched_meta.update(
+        instructor_name="Guidian Editorial Team",
+        instructor_credentials="Home Inspection Professionals",
+        course_approval_number=enriched_meta.get("course_approval_number"),
+        state_approvals=list(course.state_approvals) if course.state_approvals else [],
+        completion_date=completion_date,
+        expiry_date=expiry_date,
+        verify_url=verify_url,
+    )
 
     html = build_certificate_html(
         learner_name=user.full_name or user.email,
@@ -54,6 +71,12 @@ def render_and_persist_certificate(db: Session, certificate_id: UUID) -> Certifi
         issued_at=cert.issued_at,
         verification_code=cert.verification_code,
         accrediting_body=course.accrediting_body,
+        instructor_name=enriched_meta["instructor_name"],
+        instructor_credentials=enriched_meta["instructor_credentials"],
+        course_approval_number=enriched_meta.get("course_approval_number"),
+        state_approvals=enriched_meta["state_approvals"],
+        expiry_date=expiry_date,
+        verify_url=verify_url,
     )
 
     try:
@@ -61,11 +84,10 @@ def render_and_persist_certificate(db: Session, certificate_id: UUID) -> Certifi
         key = _s3_key(cert)
         uri = upload_certificate_pdf(pdf_bytes, key)
         cert.pdf_url = uri
-        metadata = dict(cert.metadata_ or {})
-        metadata["s3_key"] = key
-        metadata["status"] = "issued"
-        metadata["byte_length"] = len(pdf_bytes)
-        cert.metadata_ = metadata
+        enriched_meta["s3_key"] = key
+        enriched_meta["status"] = "issued"
+        enriched_meta["byte_length"] = len(pdf_bytes)
+        cert.metadata_ = enriched_meta
 
         db.add(
             ComplianceAuditLog(
