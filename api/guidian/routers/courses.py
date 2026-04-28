@@ -226,6 +226,30 @@ async def get_lesson_audio(
     return RedirectResponse(url, status_code=302)
 
 
+@router.get("/lessons/{lesson_id}/image-url")
+async def get_lesson_image_url(
+    lesson_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return presigned image URL as JSON — no auth required."""
+    lesson = (await db.execute(select(Lesson).where(Lesson.id == lesson_id))).scalar_one_or_none()
+    if not lesson or not lesson.image_url:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No image for this lesson")
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=settings.S3_ENDPOINT_URL,
+        aws_access_key_id=settings.S3_ACCESS_KEY,
+        aws_secret_access_key=settings.S3_SECRET_KEY,
+        region_name=settings.S3_REGION,
+    )
+    url = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.S3_BUCKET_COURSES, "Key": lesson.image_url},
+        ExpiresIn=86400,  # 24 hours for images
+    )
+    return {"url": url}
+
+
 @router.get("/lessons/{lesson_id}/audio-url")
 async def get_lesson_audio_url(
     lesson_id: UUID,

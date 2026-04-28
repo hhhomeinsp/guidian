@@ -624,6 +624,16 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
   // Per-slide audio
   // ---------------------------------------------------------------------------
   const [slideAudioUrls, setSlideAudioUrls] = React.useState<(string | null)[]>([]);
+  const [presignedImageUrl, setPresignedImageUrl] = React.useState<string | null>(null);
+
+  // Fetch presigned image URL for title slide
+  React.useEffect(() => {
+    if (!lesson.image_url) return;
+    fetch(`${API_BASE_URL}/courses/lessons/${lessonId}/image-url`)
+      .then(r => r.json())
+      .then(d => setPresignedImageUrl(d.url ?? null))
+      .catch(() => {});
+  }, [lessonId, lesson.image_url]);
   const audioRef = React.useRef<HTMLAudioElement>(null);
   const [audioPlaying, setAudioPlaying] = React.useState(false);
   const [audioPct, setAudioPct] = React.useState(0);
@@ -825,7 +835,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
               <TitleSlide
                 title={lesson.title}
                 objectives={lesson.objectives}
-                imageUrl={lesson.image_url}
+                imageUrl={presignedImageUrl}
                 clockMinutes={lesson.clock_minutes}
                 onNext={goNext}
               />
