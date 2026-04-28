@@ -251,3 +251,45 @@ async def get_lesson_audio_url(
         ExpiresIn=3600,
     )
     return {"url": url}
+
+
+@router.get("/lessons/{lesson_id}/slides/audio")
+async def get_lesson_slide_audio_urls(
+    lesson_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Return presigned R2 URLs for each slide's audio, in order.
+    Index 0 = title slide, 1..n = content slides.
+    Slides with no audio key return null in that position.
+    Presigned URLs valid for 2 hours. No auth required.
+    """
+    lesson = (await db.execute(select(Lesson).where(Lesson.id == lesson_id))).scalar_one_or_none()
+    if not lesson:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+
+    keys: list[str] = lesson.slide_audio_keys or []
+    if not keys:
+        return {"slide_audio_urls": []}
+
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=settings.S3_ENDPOINT_URL,
+        aws_access_key_id=settings.S3_ACCESS_KEY,
+        aws_secret_access_key=settings.S3_SECRET_KEY,
+        region_name=settings.S3_REGION,
+    )
+
+    slide_audio_urls: list[str | None] = []
+    for key in keys:
+        if key:
+            url = s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": settings.S3_BUCKET_AUDIO, "Key": key},
+                ExpiresIn=7200,
+            )
+            slide_audio_urls.append(url)
+        else:
+            slide_audio_urls.append(None)
+
+    return {"slide_audio_urls": slide_audio_urls}

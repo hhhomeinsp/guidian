@@ -42,6 +42,7 @@ class LessonRead(LessonCreate):
     audio_url: str | None = None
     image_url: str | None = None
     transcript: str | None = None
+    slide_audio_keys: list[str] | None = None
     version: int
 
 

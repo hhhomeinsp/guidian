@@ -11,12 +11,9 @@ import {
   ChevronRight,
   Play,
   Pause,
-  FileText,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AudioPlayer } from "./AudioPlayer";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
@@ -35,6 +32,7 @@ export interface SlideViewerProps {
     audio_url?: string | null;
     clock_minutes?: number;
     transcript?: string | null;
+    slide_audio_keys?: string[] | null;
   };
   lessonId: string;
   onComplete: () => void;
@@ -401,12 +399,20 @@ function ContentSlide({
   slideNumber,
   totalSlides,
   onTap,
+  hasAudio,
+  audioPlaying,
+  audioPct,
+  onAudioToggle,
 }: {
   heading: string;
   body: string;
   slideNumber: number;
   totalSlides: number;
   onTap?: (e: React.MouseEvent) => void;
+  hasAudio?: boolean;
+  audioPlaying?: boolean;
+  audioPct?: number;
+  onAudioToggle?: () => void;
 }) {
   const bodyRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
@@ -431,6 +437,27 @@ function ContentSlide({
             {heading}
           </h2>
         </div>
+
+        {/* Per-slide audio controls */}
+        {hasAudio && (
+          <div className="mt-2.5 flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onAudioToggle?.(); }}
+              aria-label={audioPlaying ? "Pause audio" : "Play audio"}
+              className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 active:scale-95 transition-transform"
+            >
+              {audioPlaying
+                ? <Pause className="h-3 w-3" aria-hidden />
+                : <Play className="h-3 w-3 translate-x-px" aria-hidden />}
+            </button>
+            <div className="flex-1 h-1 rounded-full bg-white/20 overflow-hidden">
+              <div
+                className="h-full bg-white/70 rounded-full transition-all duration-300"
+                style={{ width: `${audioPct ?? 0}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Scrollable body */}
@@ -593,22 +620,51 @@ const INACTIVITY_POLL_MS = 60 * 1000;        // check every 1 min
 export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }: SlideViewerProps) {
   const sections = React.useMemo(() => parseSections(lesson.mdx_content), [lesson.mdx_content]);
 
-  const audioSrc = lesson.audio_url
-    ? `${API_BASE_URL}/courses/lessons/${lessonId}/audio`
-    : null;
-
-  const audioToggleRef = React.useRef<(() => void) | null>(null);
-  const audioPlayingRef = React.useRef(false);
+  // ---------------------------------------------------------------------------
+  // Per-slide audio
+  // ---------------------------------------------------------------------------
+  const [slideAudioUrls, setSlideAudioUrls] = React.useState<(string | null)[]>([]);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
   const [audioPlaying, setAudioPlaying] = React.useState(false);
-  const handleAudioPlayingChange = React.useCallback((playing: boolean) => {
-    audioPlayingRef.current = playing;
-    setAudioPlaying(playing);
+  const [audioPct, setAudioPct] = React.useState(0);
+
+  // Fetch presigned slide URLs once on mount (only if slide audio keys exist)
+  React.useEffect(() => {
+    if (!lesson.slide_audio_keys?.length) return;
+    fetch(`${API_BASE_URL}/courses/lessons/${lessonId}/slides/audio`)
+      .then(r => r.json())
+      .then(d => setSlideAudioUrls(d.slide_audio_urls ?? []));
+  }, [lessonId, lesson.slide_audio_keys?.length]);
+
+  // Wire up audio element event listeners (stable — runs once)
+  React.useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const onTime  = () => setAudioPct(a.duration > 0 ? (a.currentTime / a.duration) * 100 : 0);
+    const onPlay  = () => setAudioPlaying(true);
+    const onPause = () => setAudioPlaying(false);
+    const onEnd   = () => setAudioPlaying(false);
+    a.addEventListener("timeupdate", onTime);
+    a.addEventListener("play",       onPlay);
+    a.addEventListener("pause",      onPause);
+    a.addEventListener("ended",      onEnd);
+    return () => {
+      a.removeEventListener("timeupdate", onTime);
+      a.removeEventListener("play",       onPlay);
+      a.removeEventListener("pause",      onPause);
+      a.removeEventListener("ended",      onEnd);
+    };
   }, []);
 
-  // Transcript toggle
-  const [showTranscript, setShowTranscript] = React.useState(false);
+  const toggleAudio = React.useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) a.play().catch(() => {}); else a.pause();
+  }, []);
 
+  // ---------------------------------------------------------------------------
   // Inactivity tracking
+  // ---------------------------------------------------------------------------
   const lastActiveRef = React.useRef<number>(Date.now());
   const [inactivityState, setInactivityState] = React.useState<"active" | "warn" | "paused">("active");
 
@@ -622,8 +678,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
       const idle = Date.now() - lastActiveRef.current;
       if (idle >= INACTIVITY_PAUSE_MS) {
         setInactivityState("paused");
-        // Pause audio if currently playing
-        if (audioPlayingRef.current && audioToggleRef.current) audioToggleRef.current();
+        if (!audioRef.current?.paused) audioRef.current?.pause();
       } else if (idle >= INACTIVITY_WARN_MS) {
         setInactivityState(prev => prev === "active" ? "warn" : prev);
       }
@@ -634,11 +689,12 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
   const handleContentTap = React.useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button, a, input, select, textarea')) return;
-    if (audioSrc && audioToggleRef.current) {
-      audioToggleRef.current();
-    }
-  }, [audioSrc]);
+    if (slideAudioUrls.length > 0) toggleAudio();
+  }, [slideAudioUrls.length, toggleAudio]);
 
+  // ---------------------------------------------------------------------------
+  // Slide navigation
+  // ---------------------------------------------------------------------------
   const totalSlides = sections.length + 2;
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const [direction, setDirection] = React.useState(1);
@@ -657,6 +713,23 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
 
   const goNext = React.useCallback(() => goTo(currentSlide + 1), [currentSlide, goTo]);
   const goPrev = React.useCallback(() => goTo(currentSlide - 1), [currentSlide, goTo]);
+
+  // Update audio src when slide changes — stop previous, start new
+  React.useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.pause();
+    setAudioPlaying(false);
+    setAudioPct(0);
+    const url = slideAudioUrls[currentSlide] ?? null;
+    if (url) {
+      a.src = url;
+      a.load();
+      a.play().catch(() => {});
+    } else {
+      a.src = "";
+    }
+  }, [currentSlide, slideAudioUrls]);
 
   // Keyboard navigation
   React.useEffect(() => {
@@ -686,9 +759,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
   const isContentSlide = !isTitleSlide && !isSummarySlide;
 
   const contentSectionIndex = currentSlide - 1;
-  const currentHeading = isContentSlide && sections[contentSectionIndex]
-    ? sections[contentSectionIndex].heading
-    : isTitleSlide ? lesson.title : "Summary";
+  const currentSlideHasAudio = Boolean(slideAudioUrls[currentSlide]);
 
   return (
     <div
@@ -697,6 +768,9 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
       onTouchEnd={handleTouchEnd}
       onMouseMove={resetActivity}
     >
+      {/* Hidden shared audio element */}
+      <audio ref={audioRef} preload="auto" className="hidden" />
+
       {/* Skip link */}
       <a
         href="#slide-content"
@@ -764,6 +838,10 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
                 slideNumber={currentSlide}
                 totalSlides={totalSlides - 2}
                 onTap={handleContentTap}
+                hasAudio={currentSlideHasAudio}
+                audioPlaying={audioPlaying}
+                audioPct={audioPct}
+                onAudioToggle={toggleAudio}
               />
             )}
 
@@ -851,56 +929,6 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
           />
         )}
       </div>
-
-      {/* Sticky audio bar */}
-      {audioSrc && (
-        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm">
-          <div className="flex items-center gap-2 px-4 py-2.5">
-            <div className="flex-1 min-w-0">
-              <AudioPlayer
-                src={audioSrc}
-                autoPlay
-                onToggleRef={audioToggleRef}
-                onPlayingChange={handleAudioPlayingChange}
-              />
-            </div>
-            {lesson.transcript && (
-              <button
-                onClick={() => setShowTranscript(v => !v)}
-                aria-label={showTranscript ? "Hide transcript" : "Show transcript"}
-                aria-expanded={showTranscript}
-                className={cn(
-                  "shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-                  showTranscript
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <FileText className="h-3.5 w-3.5" aria-hidden />
-                Transcript
-              </button>
-            )}
-          </div>
-
-          {/* Transcript panel */}
-          {showTranscript && lesson.transcript && (
-            <div className="border-t border-border bg-amber-50 px-4 py-3 max-h-40 overflow-y-auto">
-              <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-wrap">
-                {lesson.transcript}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tap-to-pause overlay indicator */}
-      {audioSrc && audioPlaying && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-30 opacity-0 transition-opacity" id="tap-hint">
-          <div className="rounded-full bg-black/40 p-4 backdrop-blur-sm">
-            <Play className="h-8 w-8 text-white" aria-hidden />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -38,9 +38,52 @@ def generate_course(self, job_id: str) -> str:
     logger.info("Generating course for job %s (attempt %s)", job_id, self.request.retries + 1)
     with SyncSessionLocal() as db:
         course_id = run_course_generation(UUID(job_id), db)
-        synthesize_lesson_audio.delay(str(course_id))
+        synthesize_lesson_slides.delay(str(course_id))
         generate_lesson_images.delay(str(course_id))
         return str(course_id)
+
+
+@celery_app.task(
+    name="guidian.workers.tasks.synthesize_lesson_slides",
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=3,
+    acks_late=True,
+)
+def synthesize_lesson_slides(self, course_id: str) -> None:
+    """Synthesize per-slide audio for all lessons in a course."""
+    from guidian.models.models import Lesson, Module, Course
+    from guidian.services.media.tts import synthesize_lesson_slides as tts_synthesize_slides
+
+    logger.info("Per-slide TTS pipeline starting for course %s", course_id)
+    with SyncSessionLocal() as db:
+        lessons = (
+            db.execute(
+                select(Lesson)
+                .join(Module, Lesson.module_id == Module.id)
+                .join(Course, Module.course_id == Course.id)
+                .where(Course.id == UUID(course_id))
+                .order_by(Module.order_index, Lesson.order_index)
+            )
+            .scalars()
+            .all()
+        )
+        for lesson in lessons:
+            if lesson.slide_audio_keys:
+                continue
+            try:
+                tts_synthesize_slides(
+                    lesson.id,
+                    lesson.title,
+                    list(lesson.objectives or []),
+                    lesson.mdx_content,
+                    db,
+                )
+                logger.info("Slide audio generated for lesson %s", lesson.id)
+            except Exception as exc:
+                logger.warning("Slide TTS failed for lesson %s: %s", lesson.id, exc)
 
 
 @celery_app.task(
@@ -53,6 +96,7 @@ def generate_course(self, job_id: str) -> str:
     acks_late=True,
 )
 def synthesize_lesson_audio(self, course_id: str) -> None:
+    """Deprecated: use synthesize_lesson_slides. Kept for backwards compatibility."""
     from guidian.models.models import Lesson, Module, Course
     from guidian.services.media.tts import synthesize_and_upload
 
@@ -203,7 +247,7 @@ def assemble_large_course(self, module_results: list, job_id: str, course_id: st
     with SyncSessionLocal() as db:
         finalize_large_course(UUID(course_id), UUID(job_id), db)
 
-    synthesize_lesson_audio.delay(course_id)
+    synthesize_lesson_slides.delay(course_id)
     generate_lesson_images.delay(course_id)
     logger.info("Large course %s published, media generation dispatched", course_id)
     return course_id

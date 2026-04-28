@@ -18,7 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from guidian.db.base import Base, TimestampMixin, UUIDMixin
@@ -122,6 +122,7 @@ class Lesson(Base, UUIDMixin, TimestampMixin):
     requires_completion: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
+    slide_audio_keys: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=True, default=list)
 
     module: Mapped[Module] = relationship(back_populates="lessons")
 
