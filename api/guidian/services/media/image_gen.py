@@ -9,15 +9,18 @@ import boto3
 import httpx
 
 from guidian.core.config import settings
+from guidian.services.media.diagram_references import find_reference_url
 
 logger = logging.getLogger(__name__)
 
-# Consistent visual style applied to all generated and reference-based images
 _STYLE_SUFFIX = (
-    "Clean, professional educational illustration for a home inspection certification course. "
-    "Flat design. Muted color palette: navy blue (#2C3E50) for structure, slate gray (#7F8C8D) "
-    "for secondary elements, warm white background, soft orange (#E67E22) accent for key components. "
-    "No decorative elements. Suitable for licensed professional training material."
+    "Clean technical illustration for a professional home inspection training course. "
+    "Line-art style with flat colors. White or light cream background (#FAF7F2). "
+    "Primary colors: navy blue (#162D4A) for structural elements, slate gray for secondary components, "
+    "soft orange (#E67E22) accent arrows and callout labels. "
+    "All components clearly labeled with leader lines and text callouts. "
+    "No photorealism. No shadows. No people. Crisp vector-style lines. "
+    "Suitable for licensed professional certification material."
 )
 
 # Style prompt specifically for reference-based recreation
@@ -37,6 +40,22 @@ def _build_prompt(title: str, objectives: list[str]) -> str:
     if obj_summary:
         parts.append(f"Key concepts to visualize: {obj_summary}.")
     parts.append(_STYLE_SUFFIX)
+    return " ".join(parts)
+
+
+def _build_diagram_prompt(title: str, objectives: list[str]) -> str:
+    """Detailed prompt used when a reference diagram category has been matched."""
+    obj_text = " ".join(objectives[:5]) if objectives else ""
+    parts = [
+        f"Technical diagram for a professional home inspection course lesson: '{title}'.",
+        "Create an accurate, labeled cross-section or schematic illustration showing all key components.",
+    ]
+    if obj_text:
+        parts.append(f"Must clearly depict: {obj_text}.")
+    parts.append(
+        "Include leader lines and text callouts for every component. "
+        "Show proper code-compliant installation details. " + _STYLE_SUFFIX
+    )
     return " ".join(parts)
 
 
@@ -110,16 +129,25 @@ def generate_and_upload(
     """
     Generate a lesson hero image and upload to R2. Returns the S3 object key.
 
-    If reference_url is provided, downloads that diagram and uses GPT Image 1's
-    edit endpoint to recreate it in the course's consistent visual style.
-    Falls back to text-only generation if the reference fetch or edit fails.
+    Priority:
+    1. If find_reference_url() matches the lesson topic, generate a detailed
+       diagram-specific image via the text generations endpoint.
+    2. If a reference_url was explicitly provided, download it and use the
+       edits endpoint to restyle it.
+    3. Fall back to generic text-only generation.
     """
     if not settings.OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY is not configured")
 
     image_bytes: bytes | None = None
 
-    if reference_url:
+    diagram_ref = find_reference_url(title, objectives)
+    if diagram_ref:
+        logger.info("Diagram library match for lesson %s (%s) — using detailed diagram prompt", lesson_id, title)
+        prompt = _build_diagram_prompt(title, objectives)
+        image_bytes = _generate_text_only(prompt)
+
+    if image_bytes is None and reference_url:
         try:
             logger.info("Fetching reference diagram for lesson %s: %s", lesson_id, reference_url)
             ref_bytes = _fetch_reference_bytes(reference_url)
