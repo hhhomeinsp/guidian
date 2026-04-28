@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 import uuid
 
-revision = "0006_seed_opportunities_compliance"
-down_revision = "0005_opportunities_compliance"
+revision = "0006_seed_opp_compliance"
+down_revision = "0005_opp_compliance"
 branch_labels = None
 depends_on = None
 
