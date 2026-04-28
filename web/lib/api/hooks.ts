@@ -409,9 +409,10 @@ export function useSubscription() {
     queryFn: () =>
       apiFetch<{ plan: string; status: string; current_period_end: string | null }>(
         "/billing/subscription"
-      ),
+      ).catch(() => ({ plan: "free", status: "active", current_period_end: null })),
     enabled: !!getAccessToken(),
     retry: false,
+    staleTime: 60000,
   });
 }
 

@@ -11,7 +11,7 @@ export function AppHeader() {
   const { data: me } = useMe();
   const { data: sub } = useSubscription();
   const { theme, setTheme } = useTheme();
-  const showPricing = !me || !sub || sub.plan === "free";
+  const showPricing = !me?.id || !sub || sub.plan === "free";
 
   return (
     <header className="header-frosted sticky top-0 z-50">
