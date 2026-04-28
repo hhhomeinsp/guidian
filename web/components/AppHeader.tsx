@@ -5,7 +5,7 @@ import { LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { logout, useMe, useSubscription } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
-import { GuidianLogo } from "@/components/ui/GuidianLogo";
+import Image from "next/image";
 
 export function AppHeader() {
   const { data: me } = useMe();
@@ -16,8 +16,10 @@ export function AppHeader() {
   return (
     <header className="header-frosted sticky top-0 z-50">
       <div className="container flex h-14 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-lg font-bold tracking-tight text-[#162D4A] dark:text-white">Guidian</span>
+        <Link href="/" className="flex items-center">
+          {/* Light mode: dark logo | Dark mode: white logo */}
+          <Image src="/brand/logo-light.svg" alt="Guidian" width={120} height={22} className="block dark:hidden" priority />
+          <Image src="/brand/logo-dark.svg" alt="Guidian" width={120} height={22} className="hidden dark:block" priority />
         </Link>
         <nav className="flex items-center gap-0.5">
           <Link

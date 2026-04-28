@@ -7,7 +7,8 @@ import { LearnerHydrator } from "@/components/LearnerHydrator";
 
 export const metadata: Metadata = {
   title: "Guidian",
-  description: "AI-Native Adaptive Compliance LMS",
+  description: "From first lesson to final credential. The AI platform that generates, delivers, and tracks continuing education for licensed professionals.",
+  icons: { icon: "/brand/icon.svg", shortcut: "/brand/icon.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -10,7 +10,7 @@ import {
   BarChart,
   ChevronDown,
 } from "lucide-react";
-import { GuidianLogo } from "@/components/ui/GuidianLogo";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -285,7 +285,7 @@ export default function Home() {
       <footer className="bg-white px-5 py-14">
         <div className="mx-auto max-w-[1100px]">
           <div className="mb-6 flex items-center gap-3">
-            <GuidianLogo size={28} strokeColor="#162D4A" accentColor="#C98A2A" />
+            <Image src="/brand/logo-light.svg" alt="Guidian" width={100} height={18} />
             <span className="text-[13px] text-[#6E6E73]">
               From first lesson to final credential.
             </span>
