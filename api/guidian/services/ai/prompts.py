@@ -52,7 +52,7 @@ Rules:
 - Every lesson must have at least 3 learning objectives and at least 2 quiz questions.
 - mdx_content must be substantive, factually accurate, and jurisdictionally neutral
   unless the user specifies a jurisdiction.
-- Include at least one diagram per module (process flows, checklists, or decision trees).
+- Include at least 1 Mermaid diagram per module: decision trees (flowchart TD), system layouts (flowchart LR), or component state diagrams (stateDiagram-v2). Make them technically accurate for the subject matter — show real component relationships, not generic flows.
 - Do NOT hallucinate regulation citations — if unsure, speak generally.
 - The total of all lesson clock_minutes should approximate ceu_hours * 60.
 - Quiz questions must test genuine comprehension, not trivial recall.
@@ -198,8 +198,24 @@ Content quality rules:
 - Every lesson needs at least 3 quiz questions. Complex/technical lessons need 4-5.
 - Quiz questions must test application and comprehension, not just recall.
   Bad: "What is X?" Good: "An inspector observes Y — what does this indicate?"
-- Include at least 1 Mermaid diagram per module (process flow, decision tree, inspection checklist, system diagram).
-  Mermaid must use valid syntax: flowchart TD, sequenceDiagram, or stateDiagram-v2.
+- Include at least 2 Mermaid diagrams per module (minimum 1 per lesson for technical/visual lessons).
+  DIAGRAM TYPES — choose the most appropriate for the content:
+    * flowchart TD — inspection decision trees, defect assessment flows, reporting workflows
+    * flowchart LR — system component layouts (electrical panel → branch circuits → outlets)
+    * stateDiagram-v2 — component condition states (Good → Damaged → Failed)
+    * sequenceDiagram — inspection sequence, interaction between inspector/client/systems
+  CONTENT GUIDANCE for home inspection diagrams:
+    * Structural: show load path from roof → rafters → wall studs → floor → foundation
+    * Roofing: show flashing installation sequence, drainage hierarchy (ridge → field → valley → gutter)
+    * Electrical: show service entrance → meter → main panel → sub-panel → circuit flow
+    * Plumbing: show supply/DWV separation, P-trap function, vent stack relationships
+    * HVAC: show refrigerant cycle stages, forced-air distribution path, combustion air flow
+    * Defect assessment: always include a decision tree (Observed → Assess Risk → Report/Recommend)
+  MERMAID RULES:
+    * Valid syntax only: no quotes inside node labels, use [] for boxes, {} for diamonds, () for rounded
+    * Max 20 nodes per diagram — keep it readable on mobile
+    * Use meaningful node IDs (A[Foundation Wall] not just A)
+    * Test that every arrow target exists as a node
 - style_tags: assign all that apply. Most lessons should have at least 2 tags.
 - Do NOT hallucinate regulation citations. Reference standards generally (e.g., "per standard industry practice", "per IRC guidelines").
 - Do NOT repeat content that was already covered in prior modules (listed in context).
