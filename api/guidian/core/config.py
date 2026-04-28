@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     TTS_VOICE: str = "alloy"
     ELEVENLABS_API_KEY: str | None = None
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # Rachel — clear professional narration
-    OPENAI_IMAGE_MODEL: str = "gpt-image-2"
+    OPENAI_IMAGE_MODEL: str = "gpt-image-2"  # gpt-image-1 is deprecated — do not use
     OPENAI_IMAGE_SIZE: str = "1024x1024"
     OPENAI_IMAGE_QUALITY: str = "medium"
 
