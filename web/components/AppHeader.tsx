@@ -27,6 +27,14 @@ export function AppHeader() {
           >
             Courses
           </Link>
+          {me && (
+            <Link
+              href="/teacher"
+              className="hidden rounded-[8px] px-3 py-1.5 text-sm font-medium text-[#1D1D1F] transition-colors hover:bg-black/5 sm:inline-flex"
+            >
+              My Instructor
+            </Link>
+          )}
           <Link
             href="/certificates"
             className="hidden rounded-[8px] px-3 py-1.5 text-sm font-medium text-[#1D1D1F] transition-colors hover:bg-black/5 sm:inline-flex"

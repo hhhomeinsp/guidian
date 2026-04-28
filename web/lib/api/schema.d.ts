@@ -451,3 +451,19 @@ export interface SubmissionUpdate {
   approved_at?: ISODate | null;
   expires_at?: ISODate | null;
 }
+
+// --- AI Teacher ---
+export interface LearnerMemoryRead {
+  profession: string | null;
+  license_state: string | null;
+  license_type: string | null;
+  renewal_deadline: string | null;
+  long_term_summary: string | null;
+  strengths: string[];
+  struggle_areas: string[];
+  learning_goals: string | null;
+  onboarding_complete: boolean;
+  vark_style: string | null;
+  total_sessions: number;
+  last_session_at: string | null;
+}
