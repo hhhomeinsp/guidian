@@ -14,8 +14,12 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserRead)
-async def read_me(user: User = Depends(get_current_user)) -> User:
-    return user
+async def read_me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> User:
+    # Re-fetch with profile eagerly loaded to avoid lazy-load error in async context
+    result = await db.execute(
+        select(User).options(selectinload(User.profile)).where(User.id == user.id)
+    )
+    return result.scalar_one()
 
 
 @router.get("", response_model=list[UserRead], dependencies=[Depends(require_roles(UserRole.admin, UserRole.org_admin))])
