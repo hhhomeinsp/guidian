@@ -98,7 +98,8 @@ async def get_teacher_response(
     memory.last_session_at = datetime.now(timezone.utc)
     await db.commit()
 
-    return session.id
+    # Signal completion with session ID (can't return value from async generator)
+    yield f"__SESSION_ID__{session.id}"
 
 
 async def update_memory_after_session(
