@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     OPENAI_IMAGE_SIZE: str = "1024x1024"
     OPENAI_IMAGE_QUALITY: str = "medium"
 
+    STRIPE_SECRET_KEY: str | None = None
+    STRIPE_WEBHOOK_SECRET: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

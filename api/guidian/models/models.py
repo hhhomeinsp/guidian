@@ -292,6 +292,56 @@ class StateRequirement(Base, UUIDMixin, TimestampMixin):
     __table_args__ = (UniqueConstraint("state_code", "profession", name="uq_state_req_state_profession"),)
 
 
+class LearnerMemory(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "learner_memories"
+
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    profession: Mapped[str | None] = mapped_column(String(128))
+    license_state: Mapped[str | None] = mapped_column(String(4))
+    license_type: Mapped[str | None] = mapped_column(String(64))
+    renewal_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    long_term_summary: Mapped[str | None] = mapped_column(Text)
+    session_notes: Mapped[str | None] = mapped_column(Text)
+    strengths: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, server_default="{}")
+    struggle_areas: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, server_default="{}")
+    learning_goals: Mapped[str | None] = mapped_column(Text)
+    personality_notes: Mapped[str | None] = mapped_column(Text)
+    onboarding_complete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    vark_style: Mapped[str | None] = mapped_column(String(16))
+    total_sessions: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_session_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    user: Mapped["User"] = relationship()
+
+
+class TeacherSession(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "teacher_sessions"
+
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    messages: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    session_summary: Mapped[str | None] = mapped_column(Text)
+    session_type: Mapped[str] = mapped_column(String(32), default="chat", nullable=False)
+    course_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("courses.id", ondelete="SET NULL"))
+    tokens_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    user: Mapped["User"] = relationship()
+
+
+class Subscription(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "subscriptions"
+
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(128))
+    stripe_subscription_id: Mapped[str | None] = mapped_column(String(128))
+    plan: Mapped[str] = mapped_column(String(32), default="free", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="active", nullable=False)
+    current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    org_seat_count: Mapped[int | None] = mapped_column(Integer)
+
+    user: Mapped["User"] = relationship()
+
+
 class ComplianceSubmission(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "compliance_submissions"
 
