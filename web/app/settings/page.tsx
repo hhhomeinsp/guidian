@@ -2,11 +2,54 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { apiFetch, clearTokens } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
+import { useSubscription } from "@/lib/api/hooks";
+
+const PLAN_FEATURES: Record<string, string[]> = {
+  free: ["Course browsing", "1 course enrollment", "Basic AI onboarding"],
+  learner: [
+    "Unlimited enrollments",
+    "Completion certificates",
+    "CE tracking dashboard",
+    "Course library access",
+  ],
+  pro: [
+    "Everything in Learner",
+    "Personal AI Teacher with memory",
+    "Unlimited Q&A with instructor",
+    "Personalized study plans",
+    "Priority support",
+  ],
+  organization: [
+    "Everything in Pro",
+    "Branded portal",
+    "Compliance reporting",
+    "Admin dashboard",
+    "Dedicated account manager",
+  ],
+};
+
+const PLAN_LABELS: Record<string, string> = {
+  free: "Free",
+  learner: "Learner",
+  pro: "Pro",
+  organization: "Organization",
+  org: "Organization",
+};
+
+const PLAN_COLORS: Record<string, string> = {
+  free: "bg-[#F2F2F7] text-[#6E6E73]",
+  learner: "bg-[#1D1D1F] text-white",
+  pro: "bg-[#0071E3] text-white",
+  organization: "bg-[#C98A2A] text-white",
+  org: "bg-[#C98A2A] text-white",
+};
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { data: sub, isLoading: subLoading } = useSubscription();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -60,11 +103,104 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleManageBilling() {
+    try {
+      const data = await apiFetch<{ portal_url: string }>("/billing/portal", {
+        method: "POST",
+      });
+      window.location.href = data.portal_url;
+    } catch {
+      // Silently ignore — portal URL request failed
+    }
+  }
+
+  const plan = sub?.plan ?? "free";
+  const planLabel = PLAN_LABELS[plan] ?? plan;
+  const planFeatures = PLAN_FEATURES[plan] ?? PLAN_FEATURES.free;
+  const isPaid = plan !== "free";
+
   return (
     <main className="container max-w-2xl py-10 space-y-10">
       <div className="pb-4 border-b-2 border-amber">
         <h1 className="font-display text-3xl font-bold text-navy">Settings</h1>
       </div>
+
+      {/* Subscription */}
+      <section className="space-y-4">
+        <h2 className="font-display text-xl font-semibold text-navy">Subscription</h2>
+        <div className="rounded-xl border border-cloud bg-white shadow-card p-5 space-y-4">
+          {subLoading ? (
+            <div className="h-6 w-24 rounded bg-cloud animate-pulse" />
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-3 py-0.5 text-xs font-semibold ${
+                        PLAN_COLORS[plan] ?? "bg-[#F2F2F7] text-[#6E6E73]"
+                      }`}
+                    >
+                      {planLabel}
+                    </span>
+                    {sub?.status && sub.status !== "active" && (
+                      <span className="rounded-full bg-[#FF9500]/15 px-2 py-0.5 text-xs font-medium text-[#FF9500]">
+                        {sub.status}
+                      </span>
+                    )}
+                  </div>
+                  {isPaid && sub?.current_period_end && (
+                    <p className="font-body text-xs text-steel">
+                      Next billing date:{" "}
+                      {new Date(sub.current_period_end).toLocaleDateString(
+                        undefined,
+                        { year: "numeric", month: "long", day: "numeric" }
+                      )}
+                    </p>
+                  )}
+                </div>
+                {isPaid ? (
+                  <Button variant="outline" size="sm" onClick={handleManageBilling}>
+                    Manage billing
+                  </Button>
+                ) : (
+                  <Link href="/pricing">
+                    <Button size="sm" className="bg-[#0071E3] text-white hover:bg-[#0065CE]">
+                      Upgrade to Pro
+                    </Button>
+                  </Link>
+                )}
+              </div>
+              <hr className="border-cloud" />
+              <div>
+                <p className="font-body text-xs font-semibold text-navy mb-2">
+                  {planLabel} plan includes
+                </p>
+                <ul className="space-y-1.5">
+                  {planFeatures.map((f) => (
+                    <li key={f} className="flex items-center gap-2">
+                      <svg
+                        className="h-3.5 w-3.5 shrink-0 text-[#34C759]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span className="font-body text-xs text-steel">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
       {/* Your Data */}
       <section className="space-y-4">

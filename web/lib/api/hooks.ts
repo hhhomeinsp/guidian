@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, clearTokens, storeTokens } from "./client";
+import { apiFetch, clearTokens, getAccessToken, storeTokens } from "./client";
 import type {
   AIJobRead,
   AdminMetrics,
@@ -17,6 +17,7 @@ import type {
   Enrollment,
   GenerationJobRead,
   IdentityVerifyRequest,
+  LearnerMemoryRead,
   LearnerProfile,
   Lesson,
   LessonProgressRead,
@@ -401,6 +402,19 @@ export function useSendSignals() {
   });
 }
 
+// --- Billing / Subscription ---
+export function useSubscription() {
+  return useQuery({
+    queryKey: ["subscription"],
+    queryFn: () =>
+      apiFetch<{ plan: string; status: string; current_period_end: string | null }>(
+        "/billing/subscription"
+      ),
+    enabled: !!getAccessToken(),
+    retry: false,
+  });
+}
+
 export function useUpdateLessonProgress(lessonId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -410,5 +424,15 @@ export function useUpdateLessonProgress(lessonId: string) {
         body: JSON.stringify(body),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["progress", lessonId] }),
+  });
+}
+
+// --- AI Teacher ---
+export function useLearnerMemory() {
+  return useQuery({
+    queryKey: ["teacher-memory"],
+    queryFn: () => apiFetch<LearnerMemoryRead>("/teacher/memory"),
+    enabled: !!getAccessToken(),
+    retry: false,
   });
 }

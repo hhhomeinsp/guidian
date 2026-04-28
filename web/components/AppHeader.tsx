@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { logout, useMe } from "@/lib/api/hooks";
+import { logout, useMe, useSubscription } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { GuidianLogo } from "@/components/ui/GuidianLogo";
 
 export function AppHeader() {
   const { data: me } = useMe();
+  const { data: sub } = useSubscription();
   const { theme, setTheme } = useTheme();
+  const showPricing = !me || !sub || sub.plan === "free";
 
   return (
     <header className="header-frosted sticky top-0 z-50">
@@ -37,6 +39,14 @@ export function AppHeader() {
           >
             Activity
           </Link>
+          {showPricing && (
+            <Link
+              href="/pricing"
+              className="hidden rounded-[8px] px-3 py-1.5 text-sm font-medium text-[#0071E3] transition-colors hover:bg-black/5 sm:inline-flex"
+            >
+              Pricing
+            </Link>
+          )}
           <Link
             href="/settings"
             className="hidden rounded-[8px] px-3 py-1.5 text-sm font-medium text-[#1D1D1F] transition-colors hover:bg-black/5 sm:inline-flex"
