@@ -9,6 +9,7 @@ export default function AuthCallbackPage() {
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    // Use both window.location.search and hash for token extraction
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("access_token");
     const refreshToken = params.get("refresh_token");
@@ -20,8 +21,11 @@ export default function AuthCallbackPage() {
 
     // Persist to localStorage (Google OAuth = persistent session)
     setTokens(accessToken, refreshToken, true);
-    router.replace("/courses");
-  }, [router]);
+
+    // Force full page reload so iOS Safari picks up the new auth state
+    // before any React components re-check authentication
+    window.location.href = "/courses";
+  }, []);
 
   if (error) {
     return (
