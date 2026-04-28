@@ -48,8 +48,7 @@ export function ConsentBanner() {
       role="dialog"
       aria-modal="true"
       aria-label="Cookie consent"
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-amber/30 px-4 py-4 sm:px-6"
-      style={{ backgroundColor: "var(--color-navy-deep)" }}
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#D2D2D7] bg-white/95 px-4 py-4 backdrop-blur-sm sm:px-6"
     >
       <div className="container flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-body text-sm text-mist">
@@ -57,14 +56,14 @@ export function ConsentBanner() {
           certificates. Required for CE credit reporting.{" "}
           <Link
             href="/privacy"
-            className="underline text-amber-light hover:text-amber"
+            className="underline text-[#0071E3] hover:text-[#0077ED]"
           >
             Privacy Policy
           </Link>
           {" · "}
           <button
             onClick={decline}
-            className="underline text-amber-light hover:text-amber font-body text-sm"
+            className="underline text-[#0071E3] hover:text-[#0077ED] font-body text-sm"
           >
             Cookie Settings
           </button>
@@ -72,15 +71,14 @@ export function ConsentBanner() {
         <div className="flex gap-3 shrink-0">
           <button
             onClick={decline}
-            className="rounded-md border border-white/30 px-4 py-2 font-body text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-amber"
+            className="rounded-md border border-[#D2D2D7] rounded-full px-5 py-2 text-sm font-medium text-[#1D1D1F] transition-colors hover:bg-[#F5F5F7]"
           >
             Decline
           </button>
           <button
             ref={acceptRef}
             onClick={accept}
-            className="rounded-md px-4 py-2 font-body text-sm font-medium text-white transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-amber"
-            style={{ backgroundColor: "var(--color-amber)" }}
+            className="rounded-full bg-[#0071E3] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0077ED]"
           >
             Accept
           </button>

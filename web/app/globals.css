@@ -106,14 +106,16 @@
   }
 }
 
-/* Frosted glass header */
+/* Frosted glass header — always light, brand-consistent */
 .header-frosted {
-  background-color: rgba(255, 255, 255, 0.72);
+  background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+/* Dark mode: use brand navy, not black */
 .dark .header-frosted {
-  background-color: rgba(0, 0, 0, 0.72);
+  background-color: rgba(22, 45, 74, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
