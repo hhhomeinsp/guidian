@@ -64,7 +64,7 @@ function renderMdxBody(text: string): React.ReactNode {
       const tok = m[0];
       if (tok.startsWith("**")) {
         parts.push(
-          <strong key={k++} className="font-semibold text-primary">
+          <strong key={k++} className="font-semibold text-[#162D4A]">
             {tok.slice(2, -2)}
           </strong>,
         );
@@ -177,8 +177,8 @@ function renderMdxBody(text: string): React.ReactNode {
         <ul key={`ul-${i}`} className="my-3 space-y-1.5">
           {items.map((item, j) => (
             <li key={j} className="flex items-start gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              <span className="text-base leading-relaxed text-foreground/90">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#162D4A]" />
+              <span className="text-base leading-relaxed text-[#1D1D1F]">
                 {renderInline(item)}
               </span>
             </li>
@@ -199,7 +199,7 @@ function renderMdxBody(text: string): React.ReactNode {
         <div key={`steps-${startI}`} className="my-4 space-y-2">
           {steps.map((text, idx) => (
             <div key={idx} className="flex gap-3 items-start">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground mt-0.5">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#162D4A] text-xs font-bold text-white mt-0.5">
                 {idx + 1}
               </span>
               <span className="text-base leading-relaxed">{renderInline(text)}</span>
@@ -233,8 +233,8 @@ function renderMdxBody(text: string): React.ReactNode {
           <ul key={`auto-ul-${i}`} className="my-3 space-y-2">
             {sentences.map((s, j) => (
               <li key={j} className="flex items-start gap-2">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                <span className="text-base leading-relaxed text-foreground/90">{renderInline(s.trim())}</span>
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#162D4A]" />
+                <span className="text-base leading-relaxed text-[#1D1D1F]">{renderInline(s.trim())}</span>
               </li>
             ))}
           </ul>
@@ -244,7 +244,7 @@ function renderMdxBody(text: string): React.ReactNode {
       }
     }
     nodes.push(
-      <p key={i} className="text-base leading-relaxed text-foreground/90 [&+p]:mt-3">
+      <p key={i} className="text-base leading-relaxed text-[#1D1D1F] [&+p]:mt-3">
         {renderInline(line)}
       </p>,
     );
