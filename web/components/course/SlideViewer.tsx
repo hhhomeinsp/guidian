@@ -655,12 +655,17 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
         .then(d => setSlideAudioUrls(d.slide_audio_urls ?? []));
     } else if (lesson.audio_url) {
       // Fallback: use lesson audio_url for the first content slide only
-      fetch(`${API_BASE_URL}/courses/lessons/${lessonId}/audio-url`)
+      const token = typeof window !== "undefined" ? (localStorage.getItem("guidian.access_token") ?? "") : "";
+      fetch(`${API_BASE_URL}/courses/lessons/${lessonId}/audio-url`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
         .then(r => r.json())
         .then(d => {
           if (d.url) {
-            // Put the lesson audio on slide 1 (first content slide)
-            const urls: (string | null)[] = Array(50).fill(null);
+            // Put the lesson audio on all content slides (one continuous narration)
+            const totalSlides = (content.split(/\n(?=## )/).length + 2);
+            const urls: (string | null)[] = Array(Math.max(totalSlides, 25)).fill(null);
+            // Set on slide 1 (first content slide after title)
             urls[1] = d.url;
             setSlideAudioUrls(urls);
           }
