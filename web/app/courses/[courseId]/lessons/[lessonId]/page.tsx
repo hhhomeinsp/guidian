@@ -91,6 +91,13 @@ export default function LessonPlayerPage({
     else router.push(`/courses/${courseId}`);
   };
 
+  // Tell Nova which lesson is active (must be before early returns — Rules of Hooks)
+  useEffect(() => {
+    if (!lesson.data?.title) return;
+    setNovaContext(courseId, lesson.data.title);
+    return () => setNovaContext(null, null);
+  }, [courseId, lesson.data?.title, setNovaContext]);
+
   if (lesson.isLoading || course.isLoading) {
     return <main className="container py-12 font-body text-steel">Loading lesson…</main>;
   }
@@ -98,14 +105,7 @@ export default function LessonPlayerPage({
     return <main className="container py-12 font-body text-error">Failed to load lesson.</main>;
   }
 
-  const askInstructorHref = `/teacher?course=${courseId}&lesson=${encodeURIComponent(lesson.data.title)}`;
-
-  // Tell Nova which lesson is active
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    setNovaContext(courseId, lesson.data.title);
-    return () => setNovaContext(null, null);
-  }, [courseId, lesson.data.title]);
+  const askInstructorHref = `/teacher?course=${courseId}&lesson=${encodeURIComponent(lesson.data?.title ?? "")}`;
 
   // --- Slide deck mode ---
   if (showSlides) {
