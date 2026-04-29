@@ -4,8 +4,8 @@ import { Providers } from "./providers";
 import { AppHeader } from "@/components/AppHeader";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { LearnerHydrator } from "@/components/LearnerHydrator";
-import { SageProvider } from "@/components/SageProvider";
-import { SageVoice } from "@/components/SageVoice";
+import { NovaProvider } from "@/components/NovaProvider";
+import { NovaVoice } from "@/components/NovaVoice";
 
 export const metadata: Metadata = {
   title: "Guidian",
@@ -24,13 +24,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to main content
         </a>
         <Providers>
-          <SageProvider>
+          <NovaProvider>
             <LearnerHydrator />
             <AppHeader />
             <ConsentBanner />
             <div id="main-content">{children}</div>
-            <SageVoice />
-          </SageProvider>
+            <NovaVoice />
+          </NovaProvider>
         </Providers>
       </body>
     </html>

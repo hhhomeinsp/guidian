@@ -1,5 +1,5 @@
 """
-Sage — real-time voice AI instructor.
+Nova — real-time voice AI instructor.
 
 REST endpoint to create a session token, WebSocket endpoint that proxies
 audio between the browser and OpenAI Realtime API.
@@ -25,10 +25,10 @@ from guidian.routers.deps import get_current_user
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/sage", tags=["sage"])
+router = APIRouter(prefix="/nova", tags=["nova"])
 
 OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01"
-SAGE_TOKEN_EXPIRE_MINUTES = 15
+NOVA_TOKEN_EXPIRE_MINUTES = 15
 
 
 # ── Schemas ────────────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ class SessionResponse(BaseModel):
 # ── REST: create session token ─────────────────────────────────────────────────
 
 @router.post("/session", response_model=SessionResponse)
-async def create_sage_session(
+async def create_nova_session(
     body: SessionRequest,
     current_user: User = Depends(get_current_user),
 ):
@@ -56,27 +56,27 @@ async def create_sage_session(
         "course_id": body.course_id,
         "course_title": body.course_title,
         "voice": body.voice,
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=SAGE_TOKEN_EXPIRE_MINUTES),
-        "type": "sage_session",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=NOVA_TOKEN_EXPIRE_MINUTES),
+        "type": "nova_session",
     }
     token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    ws_url = f"/api/v1/sage/ws?token={token}"
+    ws_url = f"/api/v1/nova/ws?token={token}"
     return SessionResponse(token=token, ws_url=ws_url)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def _decode_sage_token(token: str) -> dict:
+def _decode_nova_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        if payload.get("type") != "sage_session":
+        if payload.get("type") != "nova_session":
             raise ValueError("invalid token type")
         return payload
     except JWTError as exc:
-        raise ValueError(f"invalid sage token: {exc}")
+        raise ValueError(f"invalid nova token: {exc}")
 
 
-def _build_sage_prompt(memory: LearnerMemory | None, course_title: str | None) -> str:
+def _build_nova_prompt(memory: LearnerMemory | None, course_title: str | None) -> str:
     profession = (memory.profession or "professional") if memory else "professional"
     license_state = (memory.license_state or "unknown") if memory else "unknown"
     vark_style = (memory.vark_style or "mixed") if memory else "mixed"
@@ -88,7 +88,7 @@ def _build_sage_prompt(memory: LearnerMemory | None, course_title: str | None) -
     context_line = f"Current course: {course_title}" if course_title else "No specific course context"
 
     return (
-        "You are Sage, a warm and knowledgeable AI instructor on Guidian — "
+        "You are Nova, a warm and knowledgeable AI instructor on Guidian — "
         "a professional continuing education platform.\n\n"
         "Learner profile:\n"
         f"- Profession: {profession}\n"
@@ -97,7 +97,7 @@ def _build_sage_prompt(memory: LearnerMemory | None, course_title: str | None) -
         f"- Strengths: {strengths_text}\n"
         f"- Areas to improve: {struggle_text}\n\n"
         f"Current context: {context_line}\n\n"
-        "Your role as Sage:\n"
+        "Your role as Nova:\n"
         "- Be the learner's trusted advisor and guide\n"
         "- Answer questions about course content, CE requirements, and licensing\n"
         "- Adapt your explanations to their profession and learning style\n"
@@ -112,9 +112,9 @@ def _build_sage_prompt(memory: LearnerMemory | None, course_title: str | None) -
 # ── WebSocket: bidirectional proxy ─────────────────────────────────────────────
 
 @router.websocket("/ws")
-async def sage_ws(websocket: WebSocket, token: str):
+async def nova_ws(websocket: WebSocket, token: str):
     try:
-        payload = _decode_sage_token(token)
+        payload = _decode_nova_token(token)
     except ValueError as exc:
         await websocket.close(code=4001, reason=str(exc))
         return
@@ -133,21 +133,21 @@ async def sage_ws(websocket: WebSocket, token: str):
             )
             memory = result.scalar_one_or_none()
     except Exception:
-        logger.warning("Could not load learner memory for sage session user=%s", user_id)
+        logger.warning("Could not load learner memory for nova session user=%s", user_id)
 
     try:
         import websockets as ws_lib
     except ImportError:
-        await websocket.send_json({"type": "error", "message": "Server missing websockets library"})
+        await websocket.send_json({"type": "error", "mesnova": "Server missing websockets library"})
         await websocket.close()
         return
 
     if not settings.OPENAI_API_KEY:
-        await websocket.send_json({"type": "error", "message": "OpenAI API key not configured"})
+        await websocket.send_json({"type": "error", "mesnova": "OpenAI API key not configured"})
         await websocket.close()
         return
 
-    session_messages: list[dict] = []
+    session_mesnovas: list[dict] = []
     openai_ws = None
 
     try:
@@ -174,7 +174,7 @@ async def sage_ws(websocket: WebSocket, token: str):
                     "prefix_padding_ms": 300,
                     "silence_duration_ms": 600,
                 },
-                "instructions": _build_sage_prompt(memory, course_title),
+                "instructions": _build_nova_prompt(memory, course_title),
             },
         }
         await openai_ws.send(json.dumps(session_update))
@@ -195,11 +195,11 @@ async def sage_ws(websocket: WebSocket, token: str):
                         await openai_ws.send(json.dumps({"type": "input_audio_buffer.commit"}))
                         await openai_ws.send(json.dumps({"type": "response.create"}))
                     elif msg_type == "text":
-                        session_messages.append({"role": "user", "content": data["text"]})
+                        session_mesnovas.append({"role": "user", "content": data["text"]})
                         await openai_ws.send(json.dumps({
                             "type": "conversation.item.create",
                             "item": {
-                                "type": "message",
+                                "type": "mesnova",
                                 "role": "user",
                                 "content": [{"type": "input_text", "text": data["text"]}],
                             },
@@ -210,7 +210,7 @@ async def sage_ws(websocket: WebSocket, token: str):
             except WebSocketDisconnect:
                 pass
             except Exception as exc:
-                logger.debug("sage client_to_openai ended: %s", exc)
+                logger.debug("nova client_to_openai ended: %s", exc)
 
         async def openai_to_client():
             try:
@@ -232,7 +232,7 @@ async def sage_ws(websocket: WebSocket, token: str):
                         })
                     elif evt_type == "response.audio_transcript.done":
                         transcript = event.get("transcript", "")
-                        session_messages.append({"role": "assistant", "content": transcript})
+                        session_mesnovas.append({"role": "assistant", "content": transcript})
                         await websocket.send_json({
                             "type": "transcript_done",
                             "text": transcript,
@@ -249,12 +249,12 @@ async def sage_ws(websocket: WebSocket, token: str):
                     elif evt_type in ("response.created", "response.done"):
                         await websocket.send_json({"type": evt_type})
                     elif evt_type == "error":
-                        err_msg = event.get("error", {}).get("message", "Unknown error")
-                        await websocket.send_json({"type": "error", "message": err_msg})
+                        err_msg = event.get("error", {}).get("mesnova", "Unknown error")
+                        await websocket.send_json({"type": "error", "mesnova": err_msg})
             except ws_lib.exceptions.ConnectionClosed:
                 pass
             except Exception as exc:
-                logger.debug("sage openai_to_client ended: %s", exc)
+                logger.debug("nova openai_to_client ended: %s", exc)
 
         done, pending = await asyncio.wait(
             [
@@ -267,13 +267,13 @@ async def sage_ws(websocket: WebSocket, token: str):
             task.cancel()
 
     except Exception as exc:
-        logger.error("Sage WS error: %s", exc, exc_info=True)
+        logger.error("Nova WS error: %s", exc, exc_info=True)
         try:
-            await websocket.send_json({"type": "error", "message": "Failed to connect to AI service"})
+            await websocket.send_json({"type": "error", "mesnova": "Failed to connect to AI service"})
         except Exception:
             pass
     finally:
-        if session_messages:
+        if session_mesnovas:
             try:
                 course_uuid: UUID | None = None
                 if payload.get("course_id"):
@@ -284,14 +284,14 @@ async def sage_ws(websocket: WebSocket, token: str):
                 async with AsyncSessionLocal() as db:
                     session = TeacherSession(
                         user_id=user_id,
-                        messages=session_messages,
+                        mesnovas=session_mesnovas,
                         session_type="voice",
                         course_id=course_uuid,
                     )
                     db.add(session)
                     await db.commit()
             except Exception:
-                logger.warning("Could not save sage session for user=%s", user_id)
+                logger.warning("Could not save nova session for user=%s", user_id)
 
         if openai_ws:
             try:

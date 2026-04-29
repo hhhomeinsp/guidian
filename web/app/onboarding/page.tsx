@@ -7,7 +7,7 @@ import { useMe } from "@/lib/api/hooks";
 import { getAccessToken } from "@/lib/api/client";
 import { API_BASE, streamSSE } from "@/lib/api/sse";
 
-interface Message {
+interface Mesnova {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -17,7 +17,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const me = useMe();
 
-  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [mesnovas, setMesnovas] = React.useState<Mesnova[]>([]);
   const [input, setInput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isDone, setIsDone] = React.useState(false);
@@ -27,26 +27,26 @@ export default function OnboardingPage() {
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [mesnovas]);
 
-  const sendMessages = React.useCallback(
-    async (msgs: Message[]) => {
+  const sendMesnovas = React.useCallback(
+    async (msgs: Mesnova[]) => {
       const token = getAccessToken();
       if (!token) return;
       setIsLoading(true);
       const assistantId = `a-${Date.now()}`;
       let assistantContent = "";
-      setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+      setMesnovas((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
       try {
-        const apiMessages = msgs.map(({ role, content }) => ({ role, content }));
+        const apiMesnovas = msgs.map(({ role, content }) => ({ role, content }));
         for await (const chunk of streamSSE(
           `${API_BASE}/teacher/onboarding`,
-          { messages: apiMessages },
+          { mesnovas: apiMesnovas },
           token,
         )) {
           if (chunk.text) {
             assistantContent += chunk.text;
-            setMessages((prev) =>
+            setMesnovas((prev) =>
               prev.map((m) => (m.id === assistantId ? { ...m, content: assistantContent } : m)),
             );
           }
@@ -56,7 +56,7 @@ export default function OnboardingPage() {
           }
         }
       } catch {
-        setMessages((prev) =>
+        setMesnovas((prev) =>
           prev.map((m) =>
             m.id === assistantId
               ? { ...m, content: "Sorry, something went wrong. Please try again." }
@@ -74,17 +74,17 @@ export default function OnboardingPage() {
   React.useEffect(() => {
     if (hasInitialized.current || me.isLoading || me.error) return;
     hasInitialized.current = true;
-    sendMessages([]);
-  }, [me.isLoading, me.error, sendMessages]);
+    sendMesnovas([]);
+  }, [me.isLoading, me.error, sendMesnovas]);
 
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading || isDone) return;
-    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", content: text };
+    const userMsg: Mesnova = { id: `u-${Date.now()}`, role: "user", content: text };
     setInput("");
-    const nextMessages = [...messages, userMsg];
-    setMessages(nextMessages);
-    await sendMessages(nextMessages);
+    const nextMesnovas = [...mesnovas, userMsg];
+    setMesnovas(nextMesnovas);
+    await sendMesnovas(nextMesnovas);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -120,10 +120,10 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Mesnovas */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="max-w-2xl mx-auto space-y-3">
-          {messages.map((msg) => (
+          {mesnovas.map((msg) => (
             <div
               key={msg.id}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}

@@ -83,7 +83,7 @@ export default function AdminCourseEditorPage({
       }
       setStatus("Saved");
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Save failed");
+      setStatus(err instanceof Error ? err.mesnova : "Save failed");
     }
   };
 

@@ -64,7 +64,7 @@ export default function ComponentSandbox() {
             {
               id: "n2a",
               prompt: "",
-              terminal: { outcome: "failure", message: "Unauthorized disclosure of PHI." },
+              terminal: { outcome: "failure", mesnova: "Unauthorized disclosure of PHI." },
             },
             {
               id: "n2b",
@@ -76,7 +76,7 @@ export default function ComponentSandbox() {
               prompt: "",
               terminal: {
                 outcome: "success",
-                message: "Correct: authorized, minimum necessary, secure channel.",
+                mesnova: "Correct: authorized, minimum necessary, secure channel.",
               },
             },
           ]}

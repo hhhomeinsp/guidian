@@ -6,7 +6,7 @@ import { Send } from "lucide-react";
 import { apiFetch, getAccessToken } from "@/lib/api/client";
 import { useOpportunities, useGenerateCourse } from "@/lib/api/hooks";
 
-interface ChatMessage {
+interface ChatMesnova {
   role: "user" | "assistant";
   content: string;
 }
@@ -25,7 +25,7 @@ interface CourseSpec {
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
-const INITIAL_MESSAGE: ChatMessage = {
+const INITIAL_MESNOVA: ChatMesnova = {
   role: "assistant",
   content:
     "Hi! Let's build a new course. What profession and state are you targeting? For example: Florida real estate agents needing ethics CE, or Texas home inspectors renewing annual CE.",
@@ -39,33 +39,33 @@ function CourseChatInner() {
   const { data: opportunities } = useOpportunities();
   const generateCourse = useGenerateCourse();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [mesnovas, setMesnovas] = useState<ChatMesnova[]>([INITIAL_MESNOVA]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [spec, setSpec] = useState<CourseSpec | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mesnovasEndRef = useRef<HTMLDivElement>(null);
 
   const opportunity = opportunities?.find((o) => o.id === opportunityId);
 
   useEffect(() => {
     if (opportunity) {
-      const contextMsg: ChatMessage = {
+      const contextMsg: ChatMesnova = {
         role: "user",
         content: `I want to build this course from our pipeline: "${opportunity.title}". Profession: ${opportunity.profession.replace(/_/g, " ")}. States: ${opportunity.target_states.join(", ")}. CEU hours: ${opportunity.ceu_hours}. ${opportunity.notes ? `Notes: ${opportunity.notes}` : ""}`,
       };
-      setMessages([INITIAL_MESSAGE, contextMsg]);
-      sendMessages([INITIAL_MESSAGE, contextMsg], opportunity.id);
+      setMesnovas([INITIAL_MESNOVA, contextMsg]);
+      sendMesnovas([INITIAL_MESNOVA, contextMsg], opportunity.id);
     }
   }, [opportunity?.id]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    mesnovasEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mesnovas]);
 
-  async function sendMessages(msgs: ChatMessage[], oppId?: string) {
+  async function sendMesnovas(msgs: ChatMesnova[], oppId?: string) {
     setIsStreaming(true);
-    const assistantMsg: ChatMessage = { role: "assistant", content: "" };
-    setMessages((prev) => [...prev, assistantMsg]);
+    const assistantMsg: ChatMesnova = { role: "assistant", content: "" };
+    setMesnovas((prev) => [...prev, assistantMsg]);
 
     try {
       const token = getAccessToken();
@@ -76,7 +76,7 @@ function CourseChatInner() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          messages: msgs.filter((m) => m.content.trim()),
+          mesnovas: msgs.filter((m) => m.content.trim()),
           opportunity_id: oppId ?? opportunityId ?? undefined,
         }),
       });
@@ -101,7 +101,7 @@ function CourseChatInner() {
           try {
             const payload = JSON.parse(line.slice(6));
             if (payload.text) {
-              setMessages((prev) => {
+              setMesnovas((prev) => {
                 const updated = [...prev];
                 updated[updated.length - 1] = {
                   role: "assistant",
@@ -119,7 +119,7 @@ function CourseChatInner() {
         }
       }
     } catch (err) {
-      setMessages((prev) => {
+      setMesnovas((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: "assistant",
@@ -134,11 +134,11 @@ function CourseChatInner() {
 
   function handleSend() {
     if (!input.trim() || isStreaming) return;
-    const userMsg: ChatMessage = { role: "user", content: input.trim() };
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
+    const userMsg: ChatMesnova = { role: "user", content: input.trim() };
+    const updatedMesnovas = [...mesnovas, userMsg];
+    setMesnovas(updatedMesnovas);
     setInput("");
-    sendMessages(updatedMessages);
+    sendMesnovas(updatedMesnovas);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -179,7 +179,7 @@ function CourseChatInner() {
         {/* Chat panel */}
         <div className="flex flex-col flex-[3] rounded-[18px] border border-[#D2D2D7] bg-white shadow-card overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.map((msg, idx) => (
+            {mesnovas.map((msg, idx) => (
               <div
                 key={idx}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
@@ -192,13 +192,13 @@ function CourseChatInner() {
                   }`}
                 >
                   {msg.content}
-                  {idx === messages.length - 1 && isStreaming && msg.role === "assistant" && (
+                  {idx === mesnovas.length - 1 && isStreaming && msg.role === "assistant" && (
                     <span className="inline-block w-1.5 h-4 ml-0.5 bg-current animate-pulse" />
                   )}
                 </div>
               </div>
             ))}
-            <div ref={messagesEndRef} />
+            <div ref={mesnovasEndRef} />
           </div>
 
           <div className="border-t border-[#D2D2D7] p-3 flex gap-2">
@@ -207,7 +207,7 @@ function CourseChatInner() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isStreaming}
-              placeholder="Type a message… (Enter to send)"
+              placeholder="Type a mesnova… (Enter to send)"
               rows={2}
               className="flex-1 resize-none rounded-[10px] border border-[#D2D2D7] px-3 py-2 text-sm text-[#1D1D1F] placeholder:text-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-[#0071E3] disabled:opacity-50"
             />

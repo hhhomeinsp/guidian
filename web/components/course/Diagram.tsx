@@ -38,7 +38,7 @@ export function Diagram({ mermaid, id, className }: DiagramProps) {
         const { svg: rendered } = await mermaidLib.render(`m-${id ?? uid}`, mermaid);
         if (!cancelled) setSvg(rendered);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+        if (!cancelled) setError(e instanceof Error ? e.mesnova : String(e));
       }
     })();
     return () => {

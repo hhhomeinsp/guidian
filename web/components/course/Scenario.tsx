@@ -9,7 +9,7 @@ export interface ScenarioNode {
   id: string;
   prompt: string;
   choices?: { label: string; nextId: string; feedback?: string }[];
-  terminal?: { outcome: "success" | "failure" | "neutral"; message: string };
+  terminal?: { outcome: "success" | "failure" | "neutral"; mesnova: string };
 }
 
 export interface ScenarioProps {
@@ -66,7 +66,7 @@ export function Scenario({ title = "Scenario", startId, nodes, onComplete }: Sce
                 }
               >
                 <p className="font-semibold capitalize">{current.terminal.outcome}</p>
-                <p className="mt-1">{current.terminal.message}</p>
+                <p className="mt-1">{current.terminal.mesnova}</p>
                 <Button variant="outline" size="sm" className="mt-3" onClick={reset}>
                   Restart scenario
                 </Button>

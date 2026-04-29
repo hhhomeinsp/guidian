@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { MesnovaCircle } from "lucide-react";
 import {
   useCourse,
   useLesson,
@@ -16,7 +16,7 @@ import {
 import type { LearningStyle } from "@/lib/api/schema";
 import { AdaptiveRenderer, LessonPage, Quiz, SlideViewer } from "@/components/course";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useSageContext } from "@/components/SageProvider";
+import { useNovaContext } from "@/components/NovaProvider";
 
 
 export default function LessonPlayerPage({
@@ -26,7 +26,7 @@ export default function LessonPlayerPage({
 }) {
   const { courseId, lessonId } = params;
   const router = useRouter();
-  const { setSageContext } = useSageContext();
+  const { setNovaContext } = useNovaContext();
   // showSlides=true → slide deck; showSlides=false → quiz mode (after slides complete)
   const [showSlides, setShowSlides] = useState(true);
   const course = useCourse(courseId);
@@ -100,11 +100,11 @@ export default function LessonPlayerPage({
 
   const askInstructorHref = `/teacher?course=${courseId}&lesson=${encodeURIComponent(lesson.data.title)}`;
 
-  // Tell Sage which lesson is active
+  // Tell Nova which lesson is active
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    setSageContext(courseId, lesson.data.title);
-    return () => setSageContext(null, null);
+    setNovaContext(courseId, lesson.data.title);
+    return () => setNovaContext(null, null);
   }, [courseId, lesson.data.title]);
 
   // --- Slide deck mode ---
@@ -136,7 +136,7 @@ export default function LessonPlayerPage({
         aria-label="Ask Instructor"
         className="fixed bottom-6 right-20 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#0071E3] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
       >
-        <MessageCircle className="h-5 w-5" />
+        <MesnovaCircle className="h-5 w-5" />
       </Link>
       </ErrorBoundary>
     );
@@ -151,7 +151,7 @@ export default function LessonPlayerPage({
       aria-label="Ask Instructor"
       className="fixed bottom-6 right-20 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#0071E3] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
     >
-      <MessageCircle className="h-5 w-5" />
+      <MesnovaCircle className="h-5 w-5" />
     </Link>
     <LessonPage
       lesson={lesson.data}

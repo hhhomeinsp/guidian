@@ -61,9 +61,9 @@ export default function SettingsPage() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("guidian.highContrast") === "true";
   });
-  const [sageVoice, setSageVoice] = useState<string>(() => {
+  const [novaVoice, setNovaVoice] = useState<string>(() => {
     if (typeof window === "undefined") return "shimmer";
-    return localStorage.getItem("sage.voice") ?? "shimmer";
+    return localStorage.getItem("nova.voice") ?? "shimmer";
   });
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -81,9 +81,9 @@ export default function SettingsPage() {
     document.body.classList.toggle("high-contrast", enabled);
   }
 
-  function applySageVoice(v: string) {
-    setSageVoice(v);
-    localStorage.setItem("sage.voice", v);
+  function applyNovaVoice(v: string) {
+    setNovaVoice(v);
+    localStorage.setItem("nova.voice", v);
   }
 
   async function downloadData() {
@@ -303,17 +303,17 @@ export default function SettingsPage() {
           </div>
           <hr className="border-cloud" />
           <div>
-            <p className="font-body text-sm font-semibold text-navy mb-0.5">Sage voice</p>
+            <p className="font-body text-sm font-semibold text-navy mb-0.5">Nova voice</p>
             <p className="font-body text-xs text-steel mb-3">
-              Choose the voice Sage uses during voice conversations.
+              Choose the voice Nova uses during voice conversations.
             </p>
             <div className="flex gap-2 flex-wrap">
               {(["shimmer", "nova", "alloy", "onyx", "echo"] as const).map((v) => (
                 <button
                   key={v}
-                  onClick={() => applySageVoice(v)}
+                  onClick={() => applyNovaVoice(v)}
                   className={`rounded-md border px-4 py-2 font-body text-sm capitalize transition-colors ${
-                    sageVoice === v
+                    novaVoice === v
                       ? "border-navy bg-navy text-white"
                       : "border-cloud bg-fog text-ink hover:border-navy/40"
                   }`}

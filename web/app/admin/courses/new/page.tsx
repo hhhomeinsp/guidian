@@ -66,7 +66,7 @@ export default function NewCoursePage() {
       });
       router.push("/admin/ai-jobs");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Generation failed");
+      setError(err instanceof Error ? err.mesnova : "Generation failed");
     }
   };
 
@@ -86,7 +86,7 @@ export default function NewCoursePage() {
       });
       setCCJobId(result.job_id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Generation failed");
+      setError(err instanceof Error ? err.mesnova : "Generation failed");
     }
   };
 

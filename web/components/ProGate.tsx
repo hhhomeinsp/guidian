@@ -10,7 +10,7 @@ interface ProGateProps {
   fallback?: React.ReactNode;
 }
 
-// Usage: <ProGate feature="AI Teacher">...</ProGate>
+// Unova: <ProGate feature="AI Teacher">...</ProGate>
 // Renders children for Pro/Org users; shows upgrade prompt for Free/Learner.
 export function ProGate({ feature, children, fallback }: ProGateProps) {
   const hasToken =

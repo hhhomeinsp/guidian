@@ -5,9 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useLearnerMemory, useMe } from "@/lib/api/hooks";
 import { getAccessToken } from "@/lib/api/client";
 import { API_BASE, streamSSE } from "@/lib/api/sse";
-import { useSageContext } from "@/components/SageProvider";
+import { useNovaContext } from "@/components/NovaProvider";
 
-interface ChatMessage {
+interface ChatMesnova {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -20,9 +20,9 @@ function TeacherPageInner() {
 
   const me = useMe();
   const memory = useLearnerMemory();
-  const { setSageContext, activateSage } = useSageContext();
+  const { setNovaContext, activateNova } = useNovaContext();
 
-  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+  const [mesnovas, setMesnovas] = React.useState<ChatMesnova[]>([]);
   const [input, setInput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const bottomRef = React.useRef<HTMLDivElement>(null);
@@ -31,32 +31,32 @@ function TeacherPageInner() {
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [mesnovas]);
 
   const sendChat = React.useCallback(
-    async (msgs: ChatMessage[]) => {
+    async (msgs: ChatMesnova[]) => {
       const token = getAccessToken();
       if (!token) return;
       setIsLoading(true);
       const assistantId = `a-${Date.now()}`;
       let content = "";
-      setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+      setMesnovas((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
       try {
-        const apiMessages = msgs.map(({ role, content }) => ({ role, content }));
-        const body: { messages: typeof apiMessages; course_id?: string } = {
-          messages: apiMessages,
+        const apiMesnovas = msgs.map(({ role, content }) => ({ role, content }));
+        const body: { mesnovas: typeof apiMesnovas; course_id?: string } = {
+          mesnovas: apiMesnovas,
         };
         if (courseId) body.course_id = courseId;
         for await (const chunk of streamSSE(`${API_BASE}/teacher/chat`, body, token)) {
           if (chunk.text) {
             content += chunk.text;
-            setMessages((prev) =>
+            setMesnovas((prev) =>
               prev.map((m) => (m.id === assistantId ? { ...m, content } : m)),
             );
           }
         }
       } catch {
-        setMessages((prev) =>
+        setMesnovas((prev) =>
           prev.map((m) =>
             m.id === assistantId
               ? {
@@ -83,22 +83,22 @@ function TeacherPageInner() {
     sendChat([]);
   }, [sendChat, me.data]); // re-run when me.data loads (auth confirmed)
 
-  // Set Sage context to current course/lesson when on this page
+  // Set Nova context to current course/lesson when on this page
   React.useEffect(() => {
     if (courseId || lessonTitle) {
-      setSageContext(courseId, lessonTitle);
+      setNovaContext(courseId, lessonTitle);
     }
-    return () => setSageContext(null, null);
-  }, [courseId, lessonTitle, setSageContext]);
+    return () => setNovaContext(null, null);
+  }, [courseId, lessonTitle, setNovaContext]);
 
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
-    const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: "user", content: text };
+    const userMsg: ChatMesnova = { id: `u-${Date.now()}`, role: "user", content: text };
     setInput("");
-    const nextMessages = [...messages, userMsg];
-    setMessages(nextMessages);
-    await sendChat(nextMessages);
+    const nextMesnovas = [...mesnovas, userMsg];
+    setMesnovas(nextMesnovas);
+    await sendChat(nextMesnovas);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -125,7 +125,7 @@ function TeacherPageInner() {
           <div className="shrink-0 border-b border-[#D2D2D7] px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h1 className="text-base font-semibold text-[#1D1D1F]">Sage — AI Instructor</h1>
+                <h1 className="text-base font-semibold text-[#1D1D1F]">Nova — AI Instructor</h1>
                 {me.data && (
                   <p className="text-xs text-[#86868B] mt-0.5">
                     {me.data.full_name ?? me.data.email}
@@ -139,9 +139,9 @@ function TeacherPageInner() {
                     {lessonTitle ? `Studying: ${lessonTitle}` : "Course context active"}
                   </span>
                 )}
-                {activateSage && (
+                {activateNova && (
                   <button
-                    onClick={activateSage}
+                    onClick={activateNova}
                     className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-white transition-colors"
                     style={{ background: "linear-gradient(135deg, #162D4A 0%, #0E7C7B 100%)" }}
                   >
@@ -159,9 +159,9 @@ function TeacherPageInner() {
             </div>
           </div>
 
-          {/* Messages */}
+          {/* Mesnovas */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-            {messages.map((msg) => (
+            {mesnovas.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
@@ -190,7 +190,7 @@ function TeacherPageInner() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Sage anything…"
+                placeholder="Ask Nova anything…"
                 disabled={isLoading}
                 className="flex-1 rounded-full border border-[#D2D2D7] bg-[#F5F5F7] px-4 py-2.5 text-sm text-[#1D1D1F] placeholder:text-[#86868B] outline-none focus:ring-2 focus:ring-[#0071E3]/30 disabled:opacity-50"
               />

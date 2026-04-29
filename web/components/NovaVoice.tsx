@@ -1,15 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { useSageContext } from "./SageProvider";
+import { useNovaContext } from "./NovaProvider";
 import { getAccessToken } from "@/lib/api/client";
 import { API_BASE } from "@/lib/api/sse";
 
-type SageState = "idle" | "connecting" | "listening" | "speaking" | "error";
+type NovaState = "idle" | "connecting" | "listening" | "speaking" | "error";
 
 interface TranscriptEntry {
   id: string;
-  role: "user" | "sage";
+  role: "user" | "nova";
   text: string;
   partial?: boolean;
 }
@@ -32,7 +32,7 @@ function WaveformIcon({ active }: { active: boolean }) {
             height={h}
             rx="1"
             fill="currentColor"
-            style={active ? { animation: `sageBar${i} 0.8s ease-in-out infinite`, animationDelay: `${i * 0.1}s` } : undefined}
+            style={active ? { animation: `novaBar${i} 0.8s ease-in-out infinite`, animationDelay: `${i * 0.1}s` } : undefined}
           />
         );
       })}
@@ -77,17 +77,17 @@ function MicIcon({ muted }: { muted: boolean }) {
 
 // ── State label ────────────────────────────────────────────────────────────────
 
-function stateLabel(s: SageState): string {
+function stateLabel(s: NovaState): string {
   switch (s) {
     case "connecting": return "Connecting…";
-    case "listening": return "Sage is listening…";
-    case "speaking": return "Sage is speaking…";
+    case "listening": return "Nova is listening…";
+    case "speaking": return "Nova is speaking…";
     case "error": return "Error";
-    default: return "Sage";
+    default: return "Nova";
   }
 }
 
-function stateColor(s: SageState): string {
+function stateColor(s: NovaState): string {
   switch (s) {
     case "listening": return "#0071E3";
     case "speaking": return "#0E7C7B";
@@ -98,10 +98,10 @@ function stateColor(s: SageState): string {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function SageVoice() {
-  const { courseId, lessonTitle, setActivateSage } = useSageContext();
+export function NovaVoice() {
+  const { courseId, lessonTitle, setActivateNova } = useNovaContext();
 
-  const [state, setState] = React.useState<SageState>("idle");
+  const [state, setState] = React.useState<NovaState>("idle");
   const [open, setOpen] = React.useState(false);
   const [transcript, setTranscript] = React.useState<TranscriptEntry[]>([]);
   const [errorMsg, setErrorMsg] = React.useState("");
@@ -191,7 +191,7 @@ export function SageVoice() {
   const startSession = React.useCallback(async () => {
     const token = getAccessToken();
     if (!token) {
-      setErrorMsg("Please log in to use Sage");
+      setErrorMsg("Please log in to use Nova");
       setState("error");
       setOpen(true);
       return;
@@ -204,11 +204,11 @@ export function SageVoice() {
 
     const voice =
       typeof window !== "undefined"
-        ? (localStorage.getItem("sage.voice") ?? "shimmer")
+        ? (localStorage.getItem("nova.voice") ?? "shimmer")
         : "shimmer";
 
     try {
-      const res = await fetch(`${API_BASE}/sage/session`, {
+      const res = await fetch(`${API_BASE}/nova/session`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -282,7 +282,7 @@ export function SageVoice() {
         }
       };
 
-      ws.onmessage = (ev) => {
+      ws.onmesnova = (ev) => {
         const event = JSON.parse(ev.data as string) as Record<string, string>;
         const t = event.type;
 
@@ -296,21 +296,21 @@ export function SageVoice() {
         } else if (t === "transcript_delta") {
           setTranscript((prev) => {
             const last = prev[prev.length - 1];
-            if (last?.role === "sage" && last.partial) {
+            if (last?.role === "nova" && last.partial) {
               return [
                 ...prev.slice(0, -1),
                 { ...last, text: last.text + event.text, partial: true },
               ];
             }
-            return [...prev, { id: `s-${Date.now()}`, role: "sage", text: event.text, partial: true }];
+            return [...prev, { id: `s-${Date.now()}`, role: "nova", text: event.text, partial: true }];
           });
         } else if (t === "transcript_done") {
           setTranscript((prev) => {
             const last = prev[prev.length - 1];
-            if (last?.role === "sage" && last.partial) {
+            if (last?.role === "nova" && last.partial) {
               return [...prev.slice(0, -1), { ...last, text: event.text, partial: false }];
             }
-            return [...prev, { id: `s-${Date.now()}`, role: "sage", text: event.text, partial: false }];
+            return [...prev, { id: `s-${Date.now()}`, role: "nova", text: event.text, partial: false }];
           });
         } else if (t === "user_transcript") {
           setTranscript((prev) => [
@@ -320,7 +320,7 @@ export function SageVoice() {
         } else if (t === "speech_started") {
           setState("listening");
         } else if (t === "error") {
-          setErrorMsg(event.message ?? "An error occurred");
+          setErrorMsg(event.mesnova ?? "An error occurred");
           setState("error");
         }
       };
@@ -337,16 +337,16 @@ export function SageVoice() {
         }
       };
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Failed to start Sage");
+      setErrorMsg(err instanceof Error ? err.mesnova : "Failed to start Nova");
       setState("error");
     }
   }, [playPcm16]);
 
   // Expose startSession so other components can trigger it
   React.useEffect(() => {
-    setActivateSage(() => startSession);
-    return () => setActivateSage(null);
-  }, [startSession, setActivateSage]);
+    setActivateNova(() => startSession);
+    return () => setActivateNova(null);
+  }, [startSession, setActivateNova]);
 
   const handleInterrupt = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -376,15 +376,15 @@ export function SageVoice() {
     <>
       {/* Keyframe animations injected once */}
       <style>{`
-        @keyframes sageBreath {
+        @keyframes novaBreath {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.06); }
         }
-        @keyframes sageBar0 { 0%,100%{height:6px;y:9px} 50%{height:14px;y:5px} }
-        @keyframes sageBar1 { 0%,100%{height:10px;y:7px} 50%{height:18px;y:3px} }
-        @keyframes sageBar2 { 0%,100%{height:14px;y:5px} 50%{height:22px;y:1px} }
-        @keyframes sageBar3 { 0%,100%{height:10px;y:7px} 50%{height:18px;y:3px} }
-        @keyframes sageBar4 { 0%,100%{height:6px;y:9px} 50%{height:14px;y:5px} }
+        @keyframes novaBar0 { 0%,100%{height:6px;y:9px} 50%{height:14px;y:5px} }
+        @keyframes novaBar1 { 0%,100%{height:10px;y:7px} 50%{height:18px;y:3px} }
+        @keyframes novaBar2 { 0%,100%{height:14px;y:5px} 50%{height:22px;y:1px} }
+        @keyframes novaBar3 { 0%,100%{height:10px;y:7px} 50%{height:18px;y:3px} }
+        @keyframes novaBar4 { 0%,100%{height:6px;y:9px} 50%{height:14px;y:5px} }
       `}</style>
 
       {/* Voice panel — shows above button when open */}
@@ -397,7 +397,7 @@ export function SageVoice() {
             background: "linear-gradient(160deg, #162D4A 0%, #0E2038 100%)",
           }}
           role="dialog"
-          aria-label="Sage voice assistant"
+          aria-label="Nova voice assistant"
         >
           {/* Panel header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
@@ -410,7 +410,7 @@ export function SageVoice() {
                 }}
               />
               <span className="text-white text-sm font-semibold" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
-                Sage
+                Nova
               </span>
               <span className="text-white/50 text-xs">{stateLabel(state)}</span>
             </div>
@@ -424,7 +424,7 @@ export function SageVoice() {
               </button>
               <button
                 onClick={stopSession}
-                aria-label="End Sage session"
+                aria-label="End Nova session"
                 className="p-1.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -438,10 +438,10 @@ export function SageVoice() {
           {/* Transcript */}
           <div className="h-56 overflow-y-auto px-4 py-3 space-y-2 text-sm" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
             {transcript.length === 0 && state === "connecting" && (
-              <p className="text-white/40 text-xs text-center pt-8">Connecting to Sage…</p>
+              <p className="text-white/40 text-xs text-center pt-8">Connecting to Nova…</p>
             )}
             {transcript.length === 0 && state === "listening" && (
-              <p className="text-white/40 text-xs text-center pt-8">Sage is ready — start speaking</p>
+              <p className="text-white/40 text-xs text-center pt-8">Nova is ready — start speaking</p>
             )}
             {transcript.map((entry) => (
               <div
@@ -474,7 +474,7 @@ export function SageVoice() {
             </div>
           )}
 
-          {/* Error message */}
+          {/* Error mesnova */}
           {state === "error" && errorMsg && (
             <div className="px-4 pb-3">
               <p className="text-red-400 text-xs text-center">{errorMsg}</p>
@@ -489,10 +489,10 @@ export function SageVoice() {
         </div>
       )}
 
-      {/* Floating Sage button */}
+      {/* Floating Nova button */}
       <button
         onClick={open ? stopSession : startSession}
-        aria-label={open ? "Close Sage voice assistant" : "Open Sage voice assistant"}
+        aria-label={open ? "Close Nova voice assistant" : "Open Nova voice assistant"}
         className={`
           fixed z-[999] flex items-center justify-center rounded-full text-white
           transition-all duration-200 hover:scale-105 active:scale-95
@@ -506,7 +506,7 @@ export function SageVoice() {
           background: open
             ? `linear-gradient(135deg, ${stateColor(state)} 0%, #0E2038 100%)`
             : "linear-gradient(135deg, #162D4A 0%, #0E7C7B 100%)",
-          animation: state === "idle" ? "sageBreath 3s ease-in-out infinite" : undefined,
+          animation: state === "idle" ? "novaBreath 3s ease-in-out infinite" : undefined,
           // Mobile: lift above bottom nav
         }}
       >
@@ -531,11 +531,11 @@ export function SageVoice() {
       {/* Mobile bottom offset override via inline style injection */}
       <style>{`
         @media (max-width: 640px) {
-          button[aria-label="Open Sage voice assistant"],
-          button[aria-label="Close Sage voice assistant"] {
+          button[aria-label="Open Nova voice assistant"],
+          button[aria-label="Close Nova voice assistant"] {
             bottom: 80px !important;
           }
-          div[role="dialog"][aria-label="Sage voice assistant"] {
+          div[role="dialog"][aria-label="Nova voice assistant"] {
             bottom: 160px !important;
             right: 12px !important;
             width: calc(100vw - 24px) !important;
