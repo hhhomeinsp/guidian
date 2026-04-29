@@ -67,7 +67,7 @@ export default function CoursesPage() {
             <div
               key={course.id}
               className="flex flex-col rounded-[18px] bg-white overflow-hidden shadow-card"
-              style={{ borderLeft: `4px solid ${stageColor}` }}
+              
             >
               <div className="flex flex-col flex-1 p-5 gap-4">
                 <div className="flex-1">
@@ -82,8 +82,8 @@ export default function CoursesPage() {
                   <span
                     className="rounded-full px-2.5 py-0.5 text-xs font-medium"
                     style={{
-                      backgroundColor: stageColor + "1A",
-                      color: stageColor,
+                      backgroundColor: "rgba(22,45,74,0.08)",
+                      color: "#162D4A",
                     }}
                   >
                     {course.ceu_hours} CEU
@@ -91,8 +91,8 @@ export default function CoursesPage() {
                   <span
                     className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
                     style={{
-                      backgroundColor: stageColor + "1A",
-                      color: stageColor,
+                      backgroundColor: "rgba(22,45,74,0.08)",
+                      color: "#162D4A",
                     }}
                   >
                     {course.status}
@@ -136,5 +136,5 @@ function getStageColor(stage: string): string {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="container space-y-6 py-10">{children}</main>;
+  return <main className="container space-y-6 py-10 min-h-screen bg-[#F5F5F7]">{children}</main>;
 }
