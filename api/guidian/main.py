@@ -22,6 +22,7 @@ from guidian.routers.opportunities import router as opportunities_router
 from guidian.routers.privacy import router as privacy_router
 from guidian.routers.scorm import router as scorm_router
 from guidian.routers.teacher import router as teacher_router
+from guidian.routers.sage import router as sage_router
 
 app = FastAPI(title=settings.PROJECT_NAME, version="0.1.0")
 
@@ -58,4 +59,5 @@ app.include_router(scorm_router, prefix=api_prefix)
 app.include_router(opportunities_router, prefix=api_prefix)
 app.include_router(compliance_submissions_router, prefix=api_prefix)
 app.include_router(teacher_router, prefix=api_prefix)
+app.include_router(sage_router, prefix=api_prefix)
 app.include_router(billing_router, prefix=api_prefix)

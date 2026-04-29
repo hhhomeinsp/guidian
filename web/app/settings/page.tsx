@@ -61,6 +61,10 @@ export default function SettingsPage() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("guidian.highContrast") === "true";
   });
+  const [sageVoice, setSageVoice] = useState<string>(() => {
+    if (typeof window === "undefined") return "shimmer";
+    return localStorage.getItem("sage.voice") ?? "shimmer";
+  });
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   function applyFontSize(size: string) {
@@ -75,6 +79,11 @@ export default function SettingsPage() {
     setHighContrast(enabled);
     localStorage.setItem("guidian.highContrast", String(enabled));
     document.body.classList.toggle("high-contrast", enabled);
+  }
+
+  function applySageVoice(v: string) {
+    setSageVoice(v);
+    localStorage.setItem("sage.voice", v);
   }
 
   async function downloadData() {
@@ -291,6 +300,28 @@ export default function SettingsPage() {
                 }`}
               />
             </button>
+          </div>
+          <hr className="border-cloud" />
+          <div>
+            <p className="font-body text-sm font-semibold text-navy mb-0.5">Sage voice</p>
+            <p className="font-body text-xs text-steel mb-3">
+              Choose the voice Sage uses during voice conversations.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {(["shimmer", "nova", "alloy", "onyx", "echo"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => applySageVoice(v)}
+                  className={`rounded-md border px-4 py-2 font-body text-sm capitalize transition-colors ${
+                    sageVoice === v
+                      ? "border-navy bg-navy text-white"
+                      : "border-cloud bg-fog text-ink hover:border-navy/40"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useLearnerMemory, useMe } from "@/lib/api/hooks";
 import { getAccessToken } from "@/lib/api/client";
 import { API_BASE, streamSSE } from "@/lib/api/sse";
+import { useSageContext } from "@/components/SageProvider";
 
 interface ChatMessage {
   id: string;
@@ -19,6 +20,7 @@ function TeacherPageInner() {
 
   const me = useMe();
   const memory = useLearnerMemory();
+  const { setSageContext, activateSage } = useSageContext();
 
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState("");
@@ -81,6 +83,14 @@ function TeacherPageInner() {
     sendChat([]);
   }, [sendChat, me.data]); // re-run when me.data loads (auth confirmed)
 
+  // Set Sage context to current course/lesson when on this page
+  React.useEffect(() => {
+    if (courseId || lessonTitle) {
+      setSageContext(courseId, lessonTitle);
+    }
+    return () => setSageContext(null, null);
+  }, [courseId, lessonTitle, setSageContext]);
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
@@ -115,7 +125,7 @@ function TeacherPageInner() {
           <div className="shrink-0 border-b border-[#D2D2D7] px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h1 className="text-base font-semibold text-[#1D1D1F]">Your AI Instructor</h1>
+                <h1 className="text-base font-semibold text-[#1D1D1F]">Sage — AI Instructor</h1>
                 {me.data && (
                   <p className="text-xs text-[#86868B] mt-0.5">
                     {me.data.full_name ?? me.data.email}
@@ -123,11 +133,29 @@ function TeacherPageInner() {
                   </p>
                 )}
               </div>
-              {(courseId || lessonTitle) && (
-                <span className="shrink-0 rounded-full bg-[#E8F2FD] text-[#0071E3] text-xs font-medium px-3 py-1">
-                  {lessonTitle ? `Studying: ${lessonTitle}` : "Course context active"}
-                </span>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {(courseId || lessonTitle) && (
+                  <span className="rounded-full bg-[#E8F2FD] text-[#0071E3] text-xs font-medium px-3 py-1">
+                    {lessonTitle ? `Studying: ${lessonTitle}` : "Course context active"}
+                  </span>
+                )}
+                {activateSage && (
+                  <button
+                    onClick={activateSage}
+                    className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-white transition-colors"
+                    style={{ background: "linear-gradient(135deg, #162D4A 0%, #0E7C7B 100%)" }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <rect x="3" y="8" width="2" height="8" rx="1" />
+                      <rect x="7" y="5" width="2" height="14" rx="1" />
+                      <rect x="11" y="3" width="2" height="18" rx="1" />
+                      <rect x="15" y="5" width="2" height="14" rx="1" />
+                      <rect x="19" y="8" width="2" height="8" rx="1" />
+                    </svg>
+                    Switch to Voice
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -162,7 +190,7 @@ function TeacherPageInner() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask your instructor anything…"
+                placeholder="Ask Sage anything…"
                 disabled={isLoading}
                 className="flex-1 rounded-full border border-[#D2D2D7] bg-[#F5F5F7] px-4 py-2.5 text-sm text-[#1D1D1F] placeholder:text-[#86868B] outline-none focus:ring-2 focus:ring-[#0071E3]/30 disabled:opacity-50"
               />

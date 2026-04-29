@@ -1,0 +1,547 @@
+"use client";
+
+import * as React from "react";
+import { useSageContext } from "./SageProvider";
+import { getAccessToken } from "@/lib/api/client";
+import { API_BASE } from "@/lib/api/sse";
+
+type SageState = "idle" | "connecting" | "listening" | "speaking" | "error";
+
+interface TranscriptEntry {
+  id: string;
+  role: "user" | "sage";
+  text: string;
+  partial?: boolean;
+}
+
+// ── Icon: animated waveform ────────────────────────────────────────────────────
+
+function WaveformIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {[3, 7, 11, 15, 19].map((x, i) => {
+        const heights = active ? [8, 14, 18, 14, 8] : [6, 10, 14, 10, 6];
+        const h = heights[i];
+        const y = (24 - h) / 2;
+        return (
+          <rect
+            key={x}
+            x={x}
+            y={y}
+            width="2"
+            height={h}
+            rx="1"
+            fill="currentColor"
+            style={active ? { animation: `sageBar${i} 0.8s ease-in-out infinite`, animationDelay: `${i * 0.1}s` } : undefined}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+// ── Spinner ────────────────────────────────────────────────────────────────────
+
+function Spinner() {
+  return (
+    <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  );
+}
+
+// ── Mic icon ──────────────────────────────────────────────────────────────────
+
+function MicIcon({ muted }: { muted: boolean }) {
+  if (muted) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <line x1="1" y1="1" x2="23" y2="23" />
+        <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+        <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  );
+}
+
+// ── State label ────────────────────────────────────────────────────────────────
+
+function stateLabel(s: SageState): string {
+  switch (s) {
+    case "connecting": return "Connecting…";
+    case "listening": return "Sage is listening…";
+    case "speaking": return "Sage is speaking…";
+    case "error": return "Error";
+    default: return "Sage";
+  }
+}
+
+function stateColor(s: SageState): string {
+  switch (s) {
+    case "listening": return "#0071E3";
+    case "speaking": return "#0E7C7B";
+    case "error": return "#FF3B30";
+    default: return "#162D4A";
+  }
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
+export function SageVoice() {
+  const { courseId, lessonTitle, setActivateSage } = useSageContext();
+
+  const [state, setState] = React.useState<SageState>("idle");
+  const [open, setOpen] = React.useState(false);
+  const [transcript, setTranscript] = React.useState<TranscriptEntry[]>([]);
+  const [errorMsg, setErrorMsg] = React.useState("");
+  const mutedRef = React.useRef(false);
+  const [mutedDisplay, setMutedDisplay] = React.useState(false);
+
+  const wsRef = React.useRef<WebSocket | null>(null);
+  const audioCtxRef = React.useRef<AudioContext | null>(null);
+  const processorRef = React.useRef<ScriptProcessorNode | null>(null);
+  const sourceRef = React.useRef<MediaStreamAudioSourceNode | null>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+  const playbackQueueRef = React.useRef<Float32Array[]>([]);
+  const isPlayingRef = React.useRef(false);
+  const transcriptEndRef = React.useRef<HTMLDivElement>(null);
+  const courseIdRef = React.useRef(courseId);
+  const lessonTitleRef = React.useRef(lessonTitle);
+
+  // Keep refs in sync so the WS closure always reads latest context
+  React.useEffect(() => { courseIdRef.current = courseId; }, [courseId]);
+  React.useEffect(() => { lessonTitleRef.current = lessonTitle; }, [lessonTitle]);
+
+  React.useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [transcript]);
+
+  const stopSession = React.useCallback(() => {
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+      audioCtxRef.current.close();
+      audioCtxRef.current = null;
+    }
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    playbackQueueRef.current = [];
+    isPlayingRef.current = false;
+    setState("idle");
+    setOpen(false);
+    setTranscript([]);
+  }, []);
+
+  const playPcm16 = React.useCallback((base64: string) => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+
+    const raw = atob(base64);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    const int16 = new Int16Array(bytes.buffer);
+    const float32 = new Float32Array(int16.length);
+    for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768.0;
+
+    playbackQueueRef.current.push(float32);
+
+    if (!isPlayingRef.current) {
+      isPlayingRef.current = true;
+      const playNext = () => {
+        const chunk = playbackQueueRef.current.shift();
+        if (!chunk || !audioCtxRef.current) {
+          isPlayingRef.current = false;
+          return;
+        }
+        const buf = audioCtxRef.current.createBuffer(1, chunk.length, 24000);
+        buf.getChannelData(0).set(chunk);
+        const src = audioCtxRef.current.createBufferSource();
+        src.buffer = buf;
+        src.connect(audioCtxRef.current.destination);
+        src.onended = playNext;
+        src.start();
+      };
+      playNext();
+    }
+  }, []);
+
+  const startSession = React.useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) {
+      setErrorMsg("Please log in to use Sage");
+      setState("error");
+      setOpen(true);
+      return;
+    }
+
+    setState("connecting");
+    setOpen(true);
+    setTranscript([]);
+    setErrorMsg("");
+
+    const voice =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("sage.voice") ?? "shimmer")
+        : "shimmer";
+
+    try {
+      const res = await fetch(`${API_BASE}/sage/session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          course_id: courseIdRef.current,
+          course_title: lessonTitleRef.current,
+          voice,
+        }),
+      });
+      if (!res.ok) throw new Error(`Session error ${res.status}`);
+      const { ws_url } = await res.json() as { ws_url: string };
+
+      // Build absolute WS URL from the API base
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+      const wsBase = apiBase.replace(/^https?/, (m) => m === "https" ? "wss" : "ws").replace(/\/api\/v1$/, "");
+      const fullWsUrl = ws_url.startsWith("ws") ? ws_url : `${wsBase}${ws_url}`;
+
+      const ws = new WebSocket(fullWsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              sampleRate: 24000,
+              channelCount: 1,
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+          });
+          streamRef.current = stream;
+
+          const ctx = new AudioContext({ sampleRate: 24000 });
+          audioCtxRef.current = ctx;
+
+          const micSource = ctx.createMediaStreamSource(stream);
+          sourceRef.current = micSource;
+
+          // ScriptProcessorNode needs to be in the graph to fire; use silent gain to avoid feedback
+          const silentGain = ctx.createGain();
+          silentGain.gain.value = 0;
+
+          const processor = ctx.createScriptProcessor(4096, 1, 1);
+          processorRef.current = processor;
+
+          processor.onaudioprocess = (e) => {
+            if (mutedRef.current || ws.readyState !== WebSocket.OPEN) return;
+            const float32 = e.inputBuffer.getChannelData(0);
+            const int16 = new Int16Array(float32.length);
+            for (let i = 0; i < float32.length; i++) {
+              const s = Math.max(-1, Math.min(1, float32[i]));
+              int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            const bytes = new Uint8Array(int16.buffer);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            ws.send(JSON.stringify({ type: "audio_chunk", audio: btoa(binary) }));
+          };
+
+          micSource.connect(processor);
+          processor.connect(silentGain);
+          silentGain.connect(ctx.destination);
+
+          setState("listening");
+        } catch {
+          setErrorMsg("Microphone access denied. Please allow microphone in browser settings.");
+          setState("error");
+          ws.close();
+        }
+      };
+
+      ws.onmessage = (ev) => {
+        const event = JSON.parse(ev.data as string) as Record<string, string>;
+        const t = event.type;
+
+        if (t === "audio_chunk") {
+          setState("speaking");
+          playPcm16(event.audio);
+        } else if (t === "audio_done") {
+          setState("listening");
+          isPlayingRef.current = false;
+          playbackQueueRef.current = [];
+        } else if (t === "transcript_delta") {
+          setTranscript((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.role === "sage" && last.partial) {
+              return [
+                ...prev.slice(0, -1),
+                { ...last, text: last.text + event.text, partial: true },
+              ];
+            }
+            return [...prev, { id: `s-${Date.now()}`, role: "sage", text: event.text, partial: true }];
+          });
+        } else if (t === "transcript_done") {
+          setTranscript((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.role === "sage" && last.partial) {
+              return [...prev.slice(0, -1), { ...last, text: event.text, partial: false }];
+            }
+            return [...prev, { id: `s-${Date.now()}`, role: "sage", text: event.text, partial: false }];
+          });
+        } else if (t === "user_transcript") {
+          setTranscript((prev) => [
+            ...prev,
+            { id: `u-${Date.now()}`, role: "user", text: event.text },
+          ]);
+        } else if (t === "speech_started") {
+          setState("listening");
+        } else if (t === "error") {
+          setErrorMsg(event.message ?? "An error occurred");
+          setState("error");
+        }
+      };
+
+      ws.onerror = () => {
+        setErrorMsg("Connection error. Please try again.");
+        setState("error");
+      };
+
+      ws.onclose = () => {
+        if (wsRef.current === ws) {
+          setState("idle");
+          setOpen(false);
+        }
+      };
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to start Sage");
+      setState("error");
+    }
+  }, [playPcm16]);
+
+  // Expose startSession so other components can trigger it
+  React.useEffect(() => {
+    setActivateSage(() => startSession);
+    return () => setActivateSage(null);
+  }, [startSession, setActivateSage]);
+
+  const handleInterrupt = () => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "interrupt" }));
+    }
+    playbackQueueRef.current = [];
+    isPlayingRef.current = false;
+    setState("listening");
+  };
+
+  const toggleMute = () => {
+    mutedRef.current = !mutedRef.current;
+    setMutedDisplay(mutedRef.current);
+  };
+
+  const active = state !== "idle" && state !== "error";
+  const buttonGlow =
+    state === "listening"
+      ? "shadow-[0_0_20px_rgba(0,113,227,0.6)]"
+      : state === "speaking"
+      ? "shadow-[0_0_20px_rgba(14,124,123,0.6)]"
+      : state === "error"
+      ? "shadow-[0_0_16px_rgba(255,59,48,0.5)]"
+      : "shadow-[0_4px_20px_rgba(22,45,74,0.35)]";
+
+  return (
+    <>
+      {/* Keyframe animations injected once */}
+      <style>{`
+        @keyframes sageBreath {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.06); }
+        }
+        @keyframes sageBar0 { 0%,100%{height:6px;y:9px} 50%{height:14px;y:5px} }
+        @keyframes sageBar1 { 0%,100%{height:10px;y:7px} 50%{height:18px;y:3px} }
+        @keyframes sageBar2 { 0%,100%{height:14px;y:5px} 50%{height:22px;y:1px} }
+        @keyframes sageBar3 { 0%,100%{height:10px;y:7px} 50%{height:18px;y:3px} }
+        @keyframes sageBar4 { 0%,100%{height:6px;y:9px} 50%{height:14px;y:5px} }
+      `}</style>
+
+      {/* Voice panel — shows above button when open */}
+      {open && (
+        <div
+          className="fixed z-[998] w-80 rounded-2xl border border-white/20 shadow-2xl overflow-hidden"
+          style={{
+            bottom: "96px",
+            right: "24px",
+            background: "linear-gradient(160deg, #162D4A 0%, #0E2038 100%)",
+          }}
+          role="dialog"
+          aria-label="Sage voice assistant"
+        >
+          {/* Panel header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{
+                  background: stateColor(state),
+                  boxShadow: `0 0 6px ${stateColor(state)}`,
+                }}
+              />
+              <span className="text-white text-sm font-semibold" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
+                Sage
+              </span>
+              <span className="text-white/50 text-xs">{stateLabel(state)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleMute}
+                aria-label={mutedDisplay ? "Unmute microphone" : "Mute microphone"}
+                className={`p-1.5 rounded-full transition-colors ${mutedDisplay ? "bg-red-500/30 text-red-400" : "text-white/60 hover:text-white hover:bg-white/10"}`}
+              >
+                <MicIcon muted={mutedDisplay} />
+              </button>
+              <button
+                onClick={stopSession}
+                aria-label="End Sage session"
+                className="p-1.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Transcript */}
+          <div className="h-56 overflow-y-auto px-4 py-3 space-y-2 text-sm" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
+            {transcript.length === 0 && state === "connecting" && (
+              <p className="text-white/40 text-xs text-center pt-8">Connecting to Sage…</p>
+            )}
+            {transcript.length === 0 && state === "listening" && (
+              <p className="text-white/40 text-xs text-center pt-8">Sage is ready — start speaking</p>
+            )}
+            {transcript.map((entry) => (
+              <div
+                key={entry.id}
+                className={`flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <span
+                  className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                    entry.role === "user"
+                      ? "bg-white/15 text-white/90"
+                      : "text-white/80"
+                  } ${entry.partial ? "opacity-70" : ""}`}
+                >
+                  {entry.text}
+                </span>
+              </div>
+            ))}
+            <div ref={transcriptEndRef} />
+          </div>
+
+          {/* Tap to interrupt when speaking */}
+          {state === "speaking" && (
+            <div className="px-4 pb-3">
+              <button
+                onClick={handleInterrupt}
+                className="w-full rounded-xl py-2 text-xs font-medium text-white/70 border border-white/20 hover:bg-white/10 transition-colors"
+              >
+                Tap to interrupt
+              </button>
+            </div>
+          )}
+
+          {/* Error message */}
+          {state === "error" && errorMsg && (
+            <div className="px-4 pb-3">
+              <p className="text-red-400 text-xs text-center">{errorMsg}</p>
+              <button
+                onClick={startSession}
+                className="mt-2 w-full rounded-xl py-2 text-xs font-medium text-white border border-white/20 hover:bg-white/10 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Floating Sage button */}
+      <button
+        onClick={open ? stopSession : startSession}
+        aria-label={open ? "Close Sage voice assistant" : "Open Sage voice assistant"}
+        className={`
+          fixed z-[999] flex items-center justify-center rounded-full text-white
+          transition-all duration-200 hover:scale-105 active:scale-95
+          ${buttonGlow}
+        `}
+        style={{
+          width: 64,
+          height: 64,
+          bottom: 24,
+          right: 24,
+          background: open
+            ? `linear-gradient(135deg, ${stateColor(state)} 0%, #0E2038 100%)`
+            : "linear-gradient(135deg, #162D4A 0%, #0E7C7B 100%)",
+          animation: state === "idle" ? "sageBreath 3s ease-in-out infinite" : undefined,
+          // Mobile: lift above bottom nav
+        }}
+      >
+        <span
+          className="sm:hidden"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+          }}
+        />
+        {state === "connecting" ? (
+          <Spinner />
+        ) : (
+          <WaveformIcon active={active} />
+        )}
+      </button>
+
+      {/* Mobile bottom offset override via inline style injection */}
+      <style>{`
+        @media (max-width: 640px) {
+          button[aria-label="Open Sage voice assistant"],
+          button[aria-label="Close Sage voice assistant"] {
+            bottom: 80px !important;
+          }
+          div[role="dialog"][aria-label="Sage voice assistant"] {
+            bottom: 160px !important;
+            right: 12px !important;
+            width: calc(100vw - 24px) !important;
+          }
+        }
+      `}</style>
+    </>
+  );
+}
