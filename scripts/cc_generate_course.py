@@ -159,7 +159,7 @@ OUTPUT (fill in all fields with real content):
   ]
 }}
 
-Return ONLY the JSON. Nothing before {{ or after }}. Write all {lessons_per_module} lessons with real content.
+Return ONLY the JSON. Nothing before {{ or after }}. Write all {lessons_per_module} lessons with real content."""
 
 
 def extract_json(text: str) -> dict:
