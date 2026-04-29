@@ -114,42 +114,43 @@ def build_module_prompt(
     min_words = min(clock_minutes_per_lesson * 10, 600)
     min_sections = max(4, min(clock_minutes_per_lesson // 8, 7))
 
-    return f"""Generate module {module_index + 1} of {num_modules} for a continuing education course.
+    lesson_titles = [f"Lesson {i+1}" for i in range(lessons_per_module)]
+    
+    return f"""You are writing a module for a professional CE course. Output ONLY the JSON object below, filled in with real content. Start your response with {{ and end with }}.
 
-Course title: {course_title}
-Course description: {course_prompt}
-Target audience: {audience or "professionals"}
-Accrediting body: {accrediting_body or "N/A"}
-Total course CEU hours: {ceu_hours}
-Lessons in this module: {lessons_per_module}
-Clock minutes per lesson: {clock_minutes_per_lesson}
+COURSE: {course_title}
+TOPIC: {course_prompt}
+AUDIENCE: {audience or "professionals"}
+MODULE: {module_index + 1} of {num_modules}
+LESSONS: {lessons_per_module} lessons, {clock_minutes_per_lesson} minutes each
 
-CONTENT REQUIREMENTS (per lesson):
-- mdx_content must be at least {min_words} words
-- mdx_content must have at least {min_sections} level-2 (##) headings — each ## becomes one slide
-- At least 4 quiz questions per lesson, scenario-based (not recall)
-- At least 1 Mermaid diagram in the first lesson of this module (set diagrams: [] for subsequent lessons)
+Write {lessons_per_module} complete lessons. Each lesson needs:
+- A specific title (not "Lesson 1")
+- 3 learning objectives
+- mdx_content: at least {min_words} words of real educational content with {min_sections} ## headings
+- 4 quiz questions testing real understanding (scenario-based)
+- clock_minutes: {clock_minutes_per_lesson}
 
-OUTPUT: Return ONLY a valid JSON object. No markdown code fences, no explanation, no preamble.
+The first lesson must include a Mermaid diagram. Others use diagrams: [].
 
-JSON schema to follow exactly:
+OUTPUT (fill in all fields with real content):
 {{
-  "title": "Module {module_index + 1} Title",
-  "description": "One-paragraph module overview",
+  "title": "Module title here",
+  "description": "Module overview here",
   "order_index": {module_index},
   "lessons": [
     {{
-      "title": "Lesson Title",
-      "objectives": ["objective 1", "objective 2", "objective 3"],
-      "mdx_content": "# Lesson Title\\n\\n## Section 1\\n\\nAt least {max(50, min_words // min_sections)} words per section...\\n\\n## Section 2\\n\\n...",
+      "title": "Specific Lesson Title",
+      "objectives": ["Do X", "Understand Y", "Apply Z"],
+      "mdx_content": "## Introduction\n\nReal content here...\n\n## Section Two\n\nMore content...",
       "style_tags": ["visual", "read"],
-      "diagrams": [{{"id": "d1", "mermaid": "flowchart TD\\n  A[Topic] --> B[Result]", "url": null}}],
+      "diagrams": [{{"id": "d1", "mermaid": "flowchart TD\n  A[Step] --> B[Result]", "url": null}}],
       "quiz": {{
         "questions": [
-          {{"id": "q1", "type": "single_choice", "prompt": "Scenario-based question?", "choices": ["Option A", "Option B", "Option C", "Option D"], "correct": 0, "explanation": "Why A is correct."}},
-          {{"id": "q2", "type": "true_false", "prompt": "True/false statement.", "choices": ["True", "False"], "correct": true, "explanation": "Why true."}},
-          {{"id": "q3", "type": "single_choice", "prompt": "Another scenario?", "choices": ["Option A", "Option B", "Option C", "Option D"], "correct": 2, "explanation": "Why C is correct."}},
-          {{"id": "q4", "type": "single_choice", "prompt": "Final question?", "choices": ["Option A", "Option B", "Option C", "Option D"], "correct": 1, "explanation": "Why B is correct."}}
+          {{"id": "q1", "type": "single_choice", "prompt": "Scenario question", "choices": ["A", "B", "C", "D"], "correct": 0, "explanation": "Why A"}},
+          {{"id": "q2", "type": "true_false", "prompt": "True/false statement", "choices": ["True", "False"], "correct": true, "explanation": "Why true"}},
+          {{"id": "q3", "type": "single_choice", "prompt": "Another scenario", "choices": ["A", "B", "C", "D"], "correct": 2, "explanation": "Why C"}},
+          {{"id": "q4", "type": "single_choice", "prompt": "Final question", "choices": ["A", "B", "C", "D"], "correct": 1, "explanation": "Why B"}}
         ]
       }},
       "clock_minutes": {clock_minutes_per_lesson},
@@ -158,9 +159,7 @@ JSON schema to follow exactly:
   ]
 }}
 
-Generate exactly {lessons_per_module} lesson objects in the lessons array.
-Each lesson must meet the word count and section count requirements.
-Return ONLY the JSON object. Nothing else."""
+Return ONLY the JSON. Nothing before {{ or after }}. Write all {lessons_per_module} lessons with real content.
 
 
 def extract_json(text: str) -> dict:
