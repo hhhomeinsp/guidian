@@ -7,6 +7,8 @@ import type {
   AdminMetrics,
   AuditLogRead,
   BehavioralSignalBatch,
+  CCGenerateRequest,
+  CCJobStatus,
   CEURuleCreate,
   CEURuleRead,
   CEURuleUpdate,
@@ -428,6 +430,31 @@ export function useUpdateLessonProgress(lessonId: string) {
         body: JSON.stringify(body),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["progress", lessonId] }),
+  });
+}
+
+// --- CC Max plan generation ---
+export function useCCGenerateCourse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CCGenerateRequest) =>
+      apiFetch<{ job_id: string; status: string }>("/admin/cc-generate-course", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+export function useCCJob(jobId: string | null) {
+  return useQuery({
+    queryKey: ["admin", "cc-jobs", jobId],
+    queryFn: () => apiFetch<CCJobStatus>(`/admin/cc-jobs/${jobId}`),
+    enabled: !!jobId,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
   });
 }
 

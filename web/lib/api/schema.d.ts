@@ -452,6 +452,26 @@ export interface SubmissionUpdate {
   expires_at?: ISODate | null;
 }
 
+// --- CC Max plan generation ---
+export interface CCGenerateRequest {
+  title: string;
+  slug: string;
+  ceu_hours: number;
+  num_modules: number;
+  lessons_per_module: number;
+  accrediting_body?: string;
+  prompt: string;
+  target_audience?: string;
+}
+
+export interface CCJobStatus {
+  job_id: string;
+  status: "queued" | "running" | "succeeded" | "failed";
+  progress: Record<string, number>;
+  course_id?: string | null;
+  error?: string | null;
+}
+
 // --- AI Teacher ---
 export interface LearnerMemoryRead {
   profession: string | null;
