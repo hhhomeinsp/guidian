@@ -433,9 +433,28 @@ def main() -> None:
         module_data["order_index"] = i
 
         # Ensure each lesson has order_index (required by API)
+        # Also normalize style_tags to valid values only
+        VALID_STYLE_TAGS = {"visual", "auditory", "read", "kinesthetic"}
+        STYLE_TAG_MAP = {
+            "practical": "kinesthetic", "hands-on": "kinesthetic", "interactive": "kinesthetic",
+            "listening": "auditory", "audio": "auditory", "spoken": "auditory",
+            "reading": "read", "text": "read", "written": "read",
+            "diagram": "visual", "image": "visual", "chart": "visual"
+        }
         for j, lesson in enumerate(module_data.get("lessons", [])):
             if "order_index" not in lesson:
                 lesson["order_index"] = j
+            # Normalize style_tags
+            raw_tags = lesson.get("style_tags", ["visual", "read"])
+            normalized = []
+            for tag in raw_tags:
+                tag_lower = tag.lower().strip()
+                if tag_lower in VALID_STYLE_TAGS:
+                    normalized.append(tag_lower)
+                elif tag_lower in STYLE_TAG_MAP:
+                    normalized.append(STYLE_TAG_MAP[tag_lower])
+                # Skip invalid tags
+            lesson["style_tags"] = normalized if normalized else ["visual", "read"]
 
         log(f"  Posting module {i + 1} to API...")
         try:
