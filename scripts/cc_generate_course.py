@@ -111,8 +111,8 @@ def build_module_prompt(
     clock_minutes_per_lesson: int,
     ceu_hours: float,
 ) -> str:
-    min_words = min(clock_minutes_per_lesson * 25, 1500)
-    min_sections = max(4, min(clock_minutes_per_lesson // 6, 10))
+    min_words = min(clock_minutes_per_lesson * 10, 600)
+    min_sections = max(4, min(clock_minutes_per_lesson // 8, 7))
 
     return f"""Generate module {module_index + 1} of {num_modules} for a continuing education course.
 
