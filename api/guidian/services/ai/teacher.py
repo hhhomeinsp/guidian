@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 from uuid import UUID
 
-import anthropic
+import openai
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,16 +65,18 @@ async def get_teacher_response(
         vark_style=vark,
     )
 
-    client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+    client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     full_response = []
 
-    async with client.messages.stream(
-        model="claude-sonnet-4-6",
+    stream = await client.chat.completions.create(
+        model=settings.OPENAI_CHAT_MODEL,
         max_tokens=2048,
-        system=system,
-        messages=messages,
-    ) as stream:
-        async for text in stream.text_stream:
+        messages=[{"role": "system", "content": system}] + messages,
+        stream=True,
+    )
+    async for chunk in stream:
+        text = chunk.choices[0].delta.content or ""
+        if True:
             full_response.append(text)
             yield text
 

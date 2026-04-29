@@ -14,7 +14,7 @@ from uuid import UUID
 from datetime import datetime, timedelta, timezone
 from typing import AsyncGenerator, Optional
 
-import anthropic
+import openai
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
@@ -204,15 +204,17 @@ async def course_chat(body: CourseChatRequest, db: AsyncSession = Depends(get_db
     messages = [{"role": m.role, "content": m.content} for m in body.messages]
 
     async def stream_events() -> AsyncGenerator[str, None]:
-        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         accumulated = ""
-        async with client.messages.stream(
-            model="claude-sonnet-4-6",
+        stream = await client.chat.completions.create(
+            model=settings.OPENAI_CHAT_MODEL,
             max_tokens=2048,
-            system=system,
-            messages=messages,
-        ) as stream:
-            async for text in stream.text_stream:
+            messages=[{"role": "system", "content": system}] + messages,
+            stream=True,
+        )
+        async for chunk in stream:
+            text = chunk.choices[0].delta.content or ""
+            if text:
                 accumulated += text
                 yield f"data: {json.dumps({'text': text})}\n\n"
                 if "COURSE_READY:" in accumulated:
