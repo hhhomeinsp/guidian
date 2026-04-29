@@ -72,7 +72,7 @@ function renderMdxBody(text: string): React.ReactNode {
         parts.push(
           <code
             key={k++}
-            className="rounded bg-muted px-1 py-0.5 font-mono text-sm"
+            className="rounded bg-[#F5F5F7] px-1 py-0.5 font-mono text-sm"
           >
             {tok.slice(1, -1)}
           </code>,
@@ -99,7 +99,7 @@ function renderMdxBody(text: string): React.ReactNode {
       nodes.push(
         <h3
           key={i}
-          className="mb-2 mt-4 text-lg font-semibold text-foreground first:mt-0"
+          className="mb-2 mt-4 text-lg font-semibold text-[#1D1D1F] first:mt-0"
         >
           {renderInline(line.replace(/^###\s/, ""))}
         </h3>,
@@ -159,7 +159,7 @@ function renderMdxBody(text: string): React.ReactNode {
                 return (
                   <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-fog'}>
                     {cells.map((cell, ci) => (
-                      <td key={ci} className="px-4 py-2.5 leading-relaxed text-foreground/90 border-t border-cloud">
+                      <td key={ci} className="px-4 py-2.5 leading-relaxed text-[#1D1D1F] border-t border-cloud">
                         {renderInline(cell)}
                       </td>
                     ))}
@@ -225,7 +225,7 @@ function renderMdxBody(text: string): React.ReactNode {
       const text = line.trim().replace(/^\*\*/, "").replace(/\*\*\.?$/, "");
       nodes.push(
         <div key={i} className="my-4 border-l-4 border-primary bg-primary/5 px-4 py-3 rounded-r-lg">
-          <p className="text-lg font-semibold text-foreground">{text}</p>
+          <p className="text-lg font-semibold text-[#1D1D1F]">{text}</p>
         </div>,
       );
       i++;
@@ -498,7 +498,7 @@ function SummarySlide({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="mb-6 text-center text-2xl font-bold text-foreground"
+        className="mb-6 text-center text-2xl font-bold text-[#1D1D1F]"
       >
         Ready for the Knowledge Check?
       </motion.h2>
@@ -523,7 +523,7 @@ function SummarySlide({
               className="flex items-start gap-2.5"
             >
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-              <span className="text-sm text-foreground/80">{obj}</span>
+              <span className="text-sm text-[#1D1D1F]">{obj}</span>
             </motion.li>
           ))}
         </motion.ul>
@@ -573,7 +573,7 @@ function DotIndicators({
             "rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             idx === current
               ? "h-2.5 w-6 bg-primary"
-              : "h-2 w-2 bg-muted-foreground/40 hover:bg-muted-foreground/70",
+              : "h-2 w-2 bg-[#6E6E73]/40 hover:bg-[#6E6E73]/70",
           )}
         />
       ))}
@@ -601,10 +601,10 @@ function InactivityModal({
     >
       <div className="mx-4 max-w-sm rounded-2xl bg-white p-8 shadow-xl text-center">
         <Clock className="mx-auto mb-4 h-10 w-10 text-[#FF9F0A]" aria-hidden />
-        <h3 id="inactivity-title" className="mb-2 text-xl font-bold text-foreground">
+        <h3 id="inactivity-title" className="mb-2 text-xl font-bold text-[#1D1D1F]">
           {variant === "warn" ? "Still there?" : "Session paused"}
         </h3>
-        <p className="mb-6 text-sm text-muted-foreground">
+        <p className="mb-6 text-sm text-[#6E6E73]">
           {variant === "warn"
             ? "Your session will pause in 5 minutes to comply with seat-time requirements."
             : "Resume when ready."}
@@ -798,7 +798,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
       </a>
 
       {/* Thin progress bar */}
-      <div className="shrink-0 h-1 w-full bg-muted" role="progressbar" aria-valuenow={currentSlide + 1} aria-valuemin={1} aria-valuemax={totalSlides} aria-label="Lesson progress">
+      <div className="shrink-0 h-1 w-full bg-[#F5F5F7]" role="progressbar" aria-valuenow={currentSlide + 1} aria-valuemin={1} aria-valuemax={totalSlides} aria-label="Lesson progress">
         <div
           className="h-full bg-primary transition-all duration-300"
           style={{ width: `${((currentSlide + 1) / totalSlides) * 100}%` }}
@@ -806,7 +806,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
       </div>
 
       {/* Slide area */}
-      <div id="slide-content" className="flex-1 overflow-hidden relative bg-background" role="main">
+      <div id="slide-content" className="flex-1 overflow-hidden relative bg-[#F5F5F7]" role="main">
 
         {!isTitleSlide && (
           <div className="absolute right-4 top-4 z-20 hidden items-center gap-2 md:flex">
@@ -815,13 +815,13 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
                 variant="ghost"
                 size="sm"
                 onClick={onBack}
-                className="text-muted-foreground"
+                className="text-[#6E6E73]"
                 aria-label="Go back"
               >
                 <ArrowLeft className="mr-1 h-4 w-4" aria-hidden /> Back
               </Button>
             )}
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+            <span className="rounded-full bg-[#F5F5F7] px-3 py-1 text-xs font-medium text-[#6E6E73]">
               {currentSlide + 1} / {totalSlides}
             </span>
           </div>
@@ -877,8 +877,8 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
             className={cn(
               "absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
               "hidden md:flex",
-              "bg-background/70 text-foreground shadow-md backdrop-blur-sm",
-              "hover:bg-background hover:shadow-lg",
+              "bg-white/70 text-[#1D1D1F] shadow-md backdrop-blur-sm",
+              "hover:bg-white hover:shadow-lg",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             )}
           >
@@ -894,8 +894,8 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
             className={cn(
               "absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
               "hidden md:flex",
-              "bg-background/70 text-foreground shadow-md backdrop-blur-sm",
-              "hover:bg-background hover:shadow-lg",
+              "bg-white/70 text-[#1D1D1F] shadow-md backdrop-blur-sm",
+              "hover:bg-white hover:shadow-lg",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             )}
           >
@@ -916,17 +916,17 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
         <nav
           role="navigation"
           aria-label="Slide navigation"
-          className="absolute bottom-0 left-0 right-0 z-20 flex md:hidden items-center justify-between border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm"
+          className="absolute bottom-0 left-0 right-0 z-20 flex md:hidden items-center justify-between border-t border-[#D2D2D7] bg-white/95 px-4 py-3 backdrop-blur-sm"
         >
           <button
             onClick={goPrev}
             disabled={currentSlide === 0}
             aria-label="Previous slide"
-            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-foreground disabled:opacity-30 active:bg-muted"
+            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-[#1D1D1F] disabled:opacity-30 active:bg-[#F5F5F7]"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden /> Prev
           </button>
-          <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase" aria-hidden>
+          <span className="text-xs font-medium tracking-widest text-[#6E6E73] uppercase" aria-hidden>
             {currentSlide + 1} / {totalSlides}
           </span>
           <button
