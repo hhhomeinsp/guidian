@@ -89,8 +89,8 @@ function stateLabel(s: NovaState): string {
 
 function stateColor(s: NovaState): string {
   switch (s) {
-    case "listening": return "#0071E3";
-    case "speaking": return "#0E7C7B";
+    case "listening": return "#C98A2A";  // amber — listening
+    case "speaking": return "#0E7C7B";  // teal — speaking
     case "error": return "#FF3B30";
     default: return "#162D4A";
   }
@@ -394,7 +394,7 @@ export function NovaVoice() {
           style={{
             bottom: "96px",
             right: "24px",
-            background: "linear-gradient(160deg, #162D4A 0%, #0E2038 100%)",
+            background: "linear-gradient(160deg, #162D4A 0%, #1E3D5C 60%, #095857 100%)",
           }}
           role="dialog"
           aria-label="Nova voice assistant"
@@ -504,8 +504,8 @@ export function NovaVoice() {
           bottom: 24,
           right: 24,
           background: open
-            ? `linear-gradient(135deg, ${stateColor(state)} 0%, #0E2038 100%)`
-            : "linear-gradient(135deg, #162D4A 0%, #0E7C7B 100%)",
+            ? `linear-gradient(135deg, ${stateColor(state)} 0%, #162D4A 60%, #0D1C2E 100%)`
+            : "linear-gradient(135deg, #162D4A 0%, #1E3D5C 50%, #0E7C7B 100%)",
           animation: state === "idle" ? "novaBreath 3s ease-in-out infinite" : undefined,
           // Mobile: lift above bottom nav
         }}
