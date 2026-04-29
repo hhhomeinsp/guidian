@@ -7,7 +7,7 @@ export default function CertificatesListPage() {
   const certs = useMyCertificates();
 
   return (
-    <main className="container space-y-6 py-8">
+    <main className="container space-y-6 py-8 min-h-screen bg-[#F5F5F7]">
       <div className="pb-4 border-b-2 border-amber inline-block">
         <h1 className="font-display text-3xl font-bold text-navy">My certificates</h1>
       </div>

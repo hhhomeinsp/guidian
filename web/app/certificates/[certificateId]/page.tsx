@@ -22,7 +22,7 @@ export default function CertificateDetailPage({
   const c = cert.data;
 
   return (
-    <main className="container space-y-6 py-8">
+    <main className="container space-y-6 py-8 min-h-screen bg-[#F5F5F7]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link href="/certificates" className="font-body text-sm text-amber hover:underline">

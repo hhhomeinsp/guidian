@@ -74,7 +74,7 @@ export default function ActivityFeedPage() {
   const statements = useMyStatements(100);
 
   return (
-    <main className="container space-y-6 py-8">
+    <main className="container space-y-6 py-8 min-h-screen bg-[#F5F5F7]">
       <div>
         <div className="pb-4 border-b-2 border-amber inline-block">
           <h1 className="font-display text-3xl font-bold text-navy">Activity</h1>

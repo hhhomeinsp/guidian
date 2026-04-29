@@ -81,7 +81,7 @@
   }
 
   .dark {
-    --background: 0 0% 0%;          /* #000000 */
+    --background: 240 9% 97%;       /* always light — Guidian is not dark mode */
     --foreground: 240 9% 97%;       /* #F5F5F7 */
     --card: 240 2% 12%;             /* #1C1C1E */
     --card-foreground: 240 9% 97%;

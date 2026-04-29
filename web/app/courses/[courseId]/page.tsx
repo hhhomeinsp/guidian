@@ -62,7 +62,7 @@ export default function CourseDetailPage({
   return (
     <Shell>
       {/* Course hero */}
-      <div className="rounded-xl bg-navy px-8 py-8">
+      <div className="rounded-xl bg-white px-8 py-8">
         <h1 className="font-display text-3xl font-bold text-white leading-snug">{c.title}</h1>
         {c.description && (
           <p className="mt-3 font-body text-mist max-w-2xl">{c.description}</p>
@@ -234,5 +234,5 @@ export default function CourseDetailPage({
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="container space-y-6 py-8">{children}</main>;
+  return <main className="container space-y-6 py-8 min-h-screen bg-[#F5F5F7]">{children}</main>;
 }
