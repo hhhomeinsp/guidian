@@ -113,14 +113,14 @@ function renderMdxBody(text: string): React.ReactNode {
       const isWarning = /^[⚠️🚨]|^Warning|^CAUTION/i.test(content);
       const isTip = /^[💡✅]|^Tip|^Note/i.test(content);
       const borderColor = isWarning
-        ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30"
+        ? "border-amber-400 bg-amber-50"
         : isTip
-          ? "border-blue-400 bg-blue-50 dark:bg-blue-950/30"
-          : "border-slate-400 bg-slate-50 dark:bg-slate-900/30";
+          ? "border-blue-400 bg-blue-50"
+          : "border-[#162D4A]/20 bg-[#F5F5F7]";
       nodes.push(
         <div
           key={i}
-          className={`my-3 rounded-r-lg border-l-4 ${borderColor} px-4 py-3 text-sm leading-relaxed`}
+          className={`my-3 rounded-r-lg border-l-4 ${borderColor} px-4 py-3 text-sm leading-relaxed text-[#1D1D1F]`}
         >
           {renderInline(content)}
         </div>,
