@@ -89,6 +89,12 @@ function renderMdxBody(text: string): React.ReactNode {
   while (i < lines.length) {
     const line = lines[i];
 
+    // # H1 heading — skip it (lesson title is already shown in the slide header)
+    if (/^#\s/.test(line) && !/^##/.test(line)) {
+      i++;
+      continue;
+    }
+
     if (/^###\s/.test(line)) {
       nodes.push(
         <h3
