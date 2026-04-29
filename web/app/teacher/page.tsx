@@ -7,7 +7,7 @@ import { getAccessToken } from "@/lib/api/client";
 import { API_BASE, streamSSE } from "@/lib/api/sse";
 import { useNovaContext } from "@/components/NovaProvider";
 
-interface ChatMesnova {
+interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -22,7 +22,7 @@ function TeacherPageInner() {
   const memory = useLearnerMemory();
   const { setNovaContext, activateNova } = useNovaContext();
 
-  const [mesnovas, setMesnovas] = React.useState<ChatMesnova[]>([]);
+  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const bottomRef = React.useRef<HTMLDivElement>(null);
@@ -31,32 +31,32 @@ function TeacherPageInner() {
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [mesnovas]);
+  }, [messages]);
 
   const sendChat = React.useCallback(
-    async (msgs: ChatMesnova[]) => {
+    async (msgs: ChatMessage[]) => {
       const token = getAccessToken();
       if (!token) return;
       setIsLoading(true);
       const assistantId = `a-${Date.now()}`;
       let content = "";
-      setMesnovas((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+      setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
       try {
-        const apiMesnovas = msgs.map(({ role, content }) => ({ role, content }));
-        const body: { mesnovas: typeof apiMesnovas; course_id?: string } = {
-          mesnovas: apiMesnovas,
+        const apiMessages = msgs.map(({ role, content }) => ({ role, content }));
+        const body: { messages: typeof apiMessages; course_id?: string } = {
+          messages: apiMessages,
         };
         if (courseId) body.course_id = courseId;
         for await (const chunk of streamSSE(`${API_BASE}/teacher/chat`, body, token)) {
           if (chunk.text) {
             content += chunk.text;
-            setMesnovas((prev) =>
+            setMessages((prev) =>
               prev.map((m) => (m.id === assistantId ? { ...m, content } : m)),
             );
           }
         }
       } catch {
-        setMesnovas((prev) =>
+        setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
               ? {
@@ -94,11 +94,11 @@ function TeacherPageInner() {
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
-    const userMsg: ChatMesnova = { id: `u-${Date.now()}`, role: "user", content: text };
+    const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: "user", content: text };
     setInput("");
-    const nextMesnovas = [...mesnovas, userMsg];
-    setMesnovas(nextMesnovas);
-    await sendChat(nextMesnovas);
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
+    await sendChat(nextMessages);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -159,9 +159,9 @@ function TeacherPageInner() {
             </div>
           </div>
 
-          {/* Mesnovas */}
+          {/* Messages */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-            {mesnovas.map((msg) => (
+            {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}

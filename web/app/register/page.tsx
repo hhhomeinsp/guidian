@@ -25,7 +25,7 @@ export default function RegisterPage() {
       setTokens(pair.access_token, pair.refresh_token, true);
       window.location.href = "/courses";
     } catch (err) {
-      setError(err instanceof Error ? err.mesnova : "Registration failed");
+      setError(err instanceof Error ? err.message : "Registration failed");
     }
   };
 

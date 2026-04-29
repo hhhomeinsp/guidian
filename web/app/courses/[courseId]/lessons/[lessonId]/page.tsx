@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MesnovaCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import {
   useCourse,
   useLesson,
@@ -136,7 +136,7 @@ export default function LessonPlayerPage({
         aria-label="Ask Instructor"
         className="fixed bottom-6 right-20 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#0071E3] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
       >
-        <MesnovaCircle className="h-5 w-5" />
+        <MessageCircle className="h-5 w-5" />
       </Link>
       </ErrorBoundary>
     );
@@ -151,7 +151,7 @@ export default function LessonPlayerPage({
       aria-label="Ask Instructor"
       className="fixed bottom-6 right-20 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#0071E3] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
     >
-      <MesnovaCircle className="h-5 w-5" />
+      <MessageCircle className="h-5 w-5" />
     </Link>
     <LessonPage
       lesson={lesson.data}

@@ -85,7 +85,7 @@ export function Quiz({ quiz, passingScore = 0.7, onSubmit, onServerSubmit }: Qui
         setServerResult(result);
         setSubmitted(true);
       } catch (e) {
-        setError(e instanceof Error ? e.mesnova : "Submission failed");
+        setError(e instanceof Error ? e.message : "Submission failed");
       } finally {
         setPending(false);
       }

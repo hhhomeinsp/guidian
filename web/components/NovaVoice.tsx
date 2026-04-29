@@ -282,7 +282,7 @@ export function NovaVoice() {
         }
       };
 
-      ws.onmesnova = (ev) => {
+      ws.onmessage = (ev) => {
         const event = JSON.parse(ev.data as string) as Record<string, string>;
         const t = event.type;
 
@@ -320,7 +320,7 @@ export function NovaVoice() {
         } else if (t === "speech_started") {
           setState("listening");
         } else if (t === "error") {
-          setErrorMsg(event.mesnova ?? "An error occurred");
+          setErrorMsg(event.message ?? "An error occurred");
           setState("error");
         }
       };
@@ -337,7 +337,7 @@ export function NovaVoice() {
         }
       };
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.mesnova : "Failed to start Nova");
+      setErrorMsg(err instanceof Error ? err.message : "Failed to start Nova");
       setState("error");
     }
   }, [playPcm16]);
@@ -474,7 +474,7 @@ export function NovaVoice() {
             </div>
           )}
 
-          {/* Error mesnova */}
+          {/* Error message */}
           {state === "error" && errorMsg && (
             <div className="px-4 pb-3">
               <p className="text-red-400 text-xs text-center">{errorMsg}</p>

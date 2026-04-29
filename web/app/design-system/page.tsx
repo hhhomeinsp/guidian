@@ -239,7 +239,7 @@ export default function DesignSystemPage() {
         <section>
           <SectionHeader
             title="Semantic Colors"
-            desc="Status and feedback colors for alerts, validation, and system mesnovas."
+            desc="Status and feedback colors for alerts, validation, and system messages."
           />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {SEMANTIC_COLORS.map((c) => (

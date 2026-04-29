@@ -25,7 +25,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
           <div className="max-w-lg rounded-xl border border-error/30 bg-error-bg p-6">
             <h2 className="font-display text-lg font-semibold text-error mb-2">Something went wrong</h2>
-            <p className="font-mono text-xs text-slate break-all">{this.state.error.mesnova}</p>
+            <p className="font-mono text-xs text-slate break-all">{this.state.error.message}</p>
             <button
               onClick={() => this.setState({ error: null })}
               className="mt-4 rounded-lg bg-navy px-4 py-2 text-sm text-white"
