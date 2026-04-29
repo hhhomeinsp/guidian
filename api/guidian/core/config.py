@@ -75,6 +75,8 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str | None = None
     STRIPE_WEBHOOK_SECRET: str | None = None
 
+    OPENCLAW_GENERATION_URL: str = "http://localhost:8765"
+
 
 @lru_cache
 def get_settings() -> Settings:

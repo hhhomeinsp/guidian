@@ -8,7 +8,6 @@ here required a schema change.
 import asyncio
 import json
 import os
-import sys
 import uuid as uuid_module
 from pathlib import Path
 from uuid import UUID
@@ -16,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from typing import AsyncGenerator, Optional
 
 import anthropic
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -251,11 +251,6 @@ class CCJobStatusResponse(BaseModel):
     error: str | None = None
 
 
-def _cc_script_path() -> Path:
-    # api/guidian/routers/admin.py → project root → scripts/cc_generate_course.py
-    return Path(__file__).parents[3] / "scripts" / "cc_generate_course.py"
-
-
 def _cc_job_file(job_id: str) -> Path:
     d = Path("/tmp/cc_jobs")
     d.mkdir(exist_ok=True)
@@ -273,53 +268,70 @@ async def _run_cc_job(
     api_base: str,
 ) -> None:
     job_file = _cc_job_file(job_id)
-    job_file.write_text(
-        json.dumps({
-            "status": "running",
-            "progress": {"modules_done": 0, "modules_total": body.num_modules},
-            "course_id": None,
-            "error": None,
-        })
-    )
 
-    script = _cc_script_path()
-    env = {**os.environ, "PATH": f"/home/claudeuser/.local/bin:{os.environ.get('PATH', '')}"}
+    def _write(data: dict) -> None:
+        job_file.write_text(json.dumps(data))
 
-    cmd = [
-        sys.executable,
-        str(script),
-        "--title", body.title,
-        "--slug", body.slug,
-        "--ceu-hours", str(body.ceu_hours),
-        "--modules", str(body.num_modules),
-        "--lessons-per-module", str(body.lessons_per_module),
-        "--prompt", body.prompt,
-        "--audience", body.target_audience,
-        "--accrediting-body", body.accrediting_body,
-        "--api", api_base,
-        "--token", token,
-        "--job-file", str(job_file),
-    ]
+    _write({
+        "status": "running",
+        "progress": {"modules_done": 0, "modules_total": body.num_modules},
+        "course_id": None,
+        "error": None,
+    })
 
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-            env=env,
-        )
-        await proc.wait()
-        # Script updates job_file itself; patch status only if script didn't do it.
-        if proc.returncode != 0 and job_file.exists():
-            data = json.loads(job_file.read_text())
-            if data.get("status") not in ("succeeded", "failed"):
-                data["status"] = "failed"
-                data["error"] = f"Script exited with code {proc.returncode}"
-                job_file.write_text(json.dumps(data))
-    except Exception as e:
-        job_file.write_text(
-            json.dumps({"status": "failed", "progress": {}, "course_id": None, "error": str(e)})
-        )
+    gen_url = settings.OPENCLAW_GENERATION_URL
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                f"{gen_url}/generate",
+                json={
+                    "title": body.title,
+                    "slug": body.slug,
+                    "ceu_hours": body.ceu_hours,
+                    "num_modules": body.num_modules,
+                    "lessons_per_module": body.lessons_per_module,
+                    "accrediting_body": body.accrediting_body,
+                    "prompt": body.prompt,
+                    "target_audience": body.target_audience,
+                    "api_base": api_base,
+                    "token": token,
+                },
+            )
+            resp.raise_for_status()
+            openclaw_job_id = resp.json()["job_id"]
+        except Exception as exc:
+            _write({
+                "status": "failed",
+                "progress": {},
+                "course_id": None,
+                "error": f"Failed to contact generation server: {exc}",
+            })
+            return
+
+        poll_url = f"{gen_url}/jobs/{openclaw_job_id}"
+        while True:
+            await asyncio.sleep(15)
+            try:
+                poll = await client.get(poll_url)
+                poll.raise_for_status()
+                data = poll.json()
+                _write({
+                    "status": data["status"],
+                    "progress": data.get("progress", {}),
+                    "course_id": data.get("course_id"),
+                    "error": data.get("error"),
+                })
+                if data["status"] in ("succeeded", "failed"):
+                    return
+            except Exception as exc:
+                _write({
+                    "status": "failed",
+                    "progress": {},
+                    "course_id": None,
+                    "error": f"Polling error: {exc}",
+                })
+                return
 
 
 @router.post(

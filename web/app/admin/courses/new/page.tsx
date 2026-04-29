@@ -110,6 +110,18 @@ export default function NewCoursePage() {
         </ModeButton>
       </div>
 
+      {mode === "cc" ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+          Claude Code Max Plan — $0 generation cost
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+          Anthropic API — billed per token
+        </span>
+      )}
+
       {mode === "cc" && (
         <div className="rounded-xl border border-amber/40 bg-amber/5 px-4 py-3">
           <p className="font-body text-xs text-slate">
