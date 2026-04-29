@@ -41,7 +41,6 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="flex flex-col items-center gap-2 mb-8">
           <Image src="/brand/logo-light.svg" alt="Guidian" width={130} height={24} priority />
-          <span className="text-xl font-semibold text-[#1D1D1F]">Guidian</span>
           <p className="text-sm text-[#6E6E73]">Create your account</p>
         </div>
 
