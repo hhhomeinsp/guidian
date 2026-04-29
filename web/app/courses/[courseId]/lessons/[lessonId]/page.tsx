@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle } from "lucide-react";
 import {
   useCourse,
   useLesson,
@@ -104,9 +103,6 @@ export default function LessonPlayerPage({
   if (lesson.error || !lesson.data) {
     return <main className="container py-12 font-body text-error">Failed to load lesson.</main>;
   }
-
-  const askInstructorHref = `/teacher?course=${courseId}&lesson=${encodeURIComponent(lesson.data?.title ?? "")}`;
-
   // --- Slide deck mode ---
   if (showSlides) {
     return (
@@ -131,13 +127,6 @@ export default function LessonPlayerPage({
         }
       />
       </div>
-      <Link
-        href={askInstructorHref}
-        aria-label="Ask Instructor"
-        className="fixed bottom-6 right-20 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#0071E3] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
-      >
-        <MessageCircle className="h-5 w-5" />
-      </Link>
       </ErrorBoundary>
     );
   }
@@ -146,13 +135,6 @@ export default function LessonPlayerPage({
   // --- Quiz / post-slides mode ---
   return (
     <>
-    <Link
-      href={askInstructorHref}
-      aria-label="Ask Instructor"
-      className="fixed bottom-6 right-20 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#0071E3] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
-    >
-      <MessageCircle className="h-5 w-5" />
-    </Link>
     <LessonPage
       lesson={lesson.data}
       moduleTitle={current?.moduleTitle}
