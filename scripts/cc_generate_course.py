@@ -160,7 +160,7 @@ OUTPUT (fill in all fields with real content):
   ]
 }}
 
-Note: Set order_index to 0, 1, 2, 3 for each lesson in sequence.
+Note: Set order_index to 0, 1, 2, 3 for each lesson. Always set diagrams to empty array [].
 Return ONLY the JSON. Nothing before {{ or after }}. Write all {lessons_per_module} lessons with real content."""
 
 

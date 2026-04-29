@@ -135,3 +135,8 @@ with SyncSessionLocal() as db:
 ## Icons
 **Always use Lucide React** (`lucide-react`) for all icons. No other icon libraries.
 Browse available icons at lucide.dev.
+
+## Diagrams
+**NO MERMAID DIAGRAMS.** All lessons must have diagrams: []
+Diagrams are created manually by Patrick and processed through GPT Image 2.
+Use scripts/process_diagram.py to upload a diagram image to R2 and map it to a lesson.
