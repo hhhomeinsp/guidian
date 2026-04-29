@@ -72,11 +72,14 @@ function TeacherPageInner() {
     [courseId],
   );
 
+  // Fire greeting once auth is loaded and token is available
   React.useEffect(() => {
     if (hasGreeted.current) return;
+    const token = getAccessToken();
+    if (!token) return; // wait for auth to load
     hasGreeted.current = true;
     sendChat([]);
-  }, [sendChat]);
+  }, [sendChat, me.data]); // re-run when me.data loads (auth confirmed)
 
   const handleSend = async () => {
     const text = input.trim();
