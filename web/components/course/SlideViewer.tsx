@@ -646,13 +646,28 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
   const [audioPlaying, setAudioPlaying] = React.useState(false);
   const [audioPct, setAudioPct] = React.useState(0);
 
-  // Fetch presigned slide URLs once on mount (only if slide audio keys exist)
+  // Fetch presigned slide URLs — if slide audio exists use per-slide, else use lesson audio_url as fallback
   React.useEffect(() => {
-    if (!lesson.slide_audio_keys?.length) return;
-    fetch(`${API_BASE_URL}/courses/lessons/${lessonId}/slides/audio`)
-      .then(r => r.json())
-      .then(d => setSlideAudioUrls(d.slide_audio_urls ?? []));
-  }, [lessonId, lesson.slide_audio_keys?.length]);
+    if (lesson.slide_audio_keys?.length) {
+      // Per-slide audio (preferred)
+      fetch(`${API_BASE_URL}/courses/lessons/${lessonId}/slides/audio`)
+        .then(r => r.json())
+        .then(d => setSlideAudioUrls(d.slide_audio_urls ?? []));
+    } else if (lesson.audio_url) {
+      // Fallback: use lesson audio_url for the first content slide only
+      fetch(`${API_BASE_URL}/courses/lessons/${lessonId}/audio-url`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.url) {
+            // Put the lesson audio on slide 1 (first content slide)
+            const urls: (string | null)[] = Array(50).fill(null);
+            urls[1] = d.url;
+            setSlideAudioUrls(urls);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [lessonId, lesson.slide_audio_keys?.length, lesson.audio_url]);
 
   // Wire up audio element event listeners (stable — runs once)
   React.useEffect(() => {

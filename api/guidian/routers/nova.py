@@ -138,16 +138,16 @@ async def nova_ws(websocket: WebSocket, token: str):
     try:
         import websockets as ws_lib
     except ImportError:
-        await websocket.send_json({"type": "error", "mesnova": "Server missing websockets library"})
+        await websocket.send_json({"type": "error", "message": "Server missing websockets library"})
         await websocket.close()
         return
 
     if not settings.OPENAI_API_KEY:
-        await websocket.send_json({"type": "error", "mesnova": "OpenAI API key not configured"})
+        await websocket.send_json({"type": "error", "message": "OpenAI API key not configured"})
         await websocket.close()
         return
 
-    session_mesnovas: list[dict] = []
+    session_messages: list[dict] = []
     openai_ws = None
 
     try:
@@ -195,11 +195,11 @@ async def nova_ws(websocket: WebSocket, token: str):
                         await openai_ws.send(json.dumps({"type": "input_audio_buffer.commit"}))
                         await openai_ws.send(json.dumps({"type": "response.create"}))
                     elif msg_type == "text":
-                        session_mesnovas.append({"role": "user", "content": data["text"]})
+                        session_messages.append({"role": "user", "content": data["text"]})
                         await openai_ws.send(json.dumps({
                             "type": "conversation.item.create",
                             "item": {
-                                "type": "mesnova",
+                                "type": "message",
                                 "role": "user",
                                 "content": [{"type": "input_text", "text": data["text"]}],
                             },
@@ -232,7 +232,7 @@ async def nova_ws(websocket: WebSocket, token: str):
                         })
                     elif evt_type == "response.audio_transcript.done":
                         transcript = event.get("transcript", "")
-                        session_mesnovas.append({"role": "assistant", "content": transcript})
+                        session_messages.append({"role": "assistant", "content": transcript})
                         await websocket.send_json({
                             "type": "transcript_done",
                             "text": transcript,
@@ -249,8 +249,8 @@ async def nova_ws(websocket: WebSocket, token: str):
                     elif evt_type in ("response.created", "response.done"):
                         await websocket.send_json({"type": evt_type})
                     elif evt_type == "error":
-                        err_msg = event.get("error", {}).get("mesnova", "Unknown error")
-                        await websocket.send_json({"type": "error", "mesnova": err_msg})
+                        err_msg = event.get("error", {}).get("message", "Unknown error")
+                        await websocket.send_json({"type": "error", "message": err_msg})
             except ws_lib.exceptions.ConnectionClosed:
                 pass
             except Exception as exc:
@@ -269,11 +269,11 @@ async def nova_ws(websocket: WebSocket, token: str):
     except Exception as exc:
         logger.error("Nova WS error: %s", exc, exc_info=True)
         try:
-            await websocket.send_json({"type": "error", "mesnova": "Failed to connect to AI service"})
+            await websocket.send_json({"type": "error", "message": "Failed to connect to AI service"})
         except Exception:
             pass
     finally:
-        if session_mesnovas:
+        if session_messages:
             try:
                 course_uuid: UUID | None = None
                 if payload.get("course_id"):
@@ -284,7 +284,7 @@ async def nova_ws(websocket: WebSocket, token: str):
                 async with AsyncSessionLocal() as db:
                     session = TeacherSession(
                         user_id=user_id,
-                        mesnovas=session_mesnovas,
+                        messages=session_messages,
                         session_type="voice",
                         course_id=course_uuid,
                     )
