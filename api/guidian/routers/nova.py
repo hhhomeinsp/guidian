@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/nova", tags=["nova"])
 
-OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01"
+OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview"
 NOVA_TOKEN_EXPIRE_MINUTES = 15
 
 
