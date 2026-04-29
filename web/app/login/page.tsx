@@ -5,7 +5,7 @@ import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "@/lib/api/hooks";
 import { setTokens, ApiError } from "@/lib/api/client";
-import { GuidianLogo } from "@/components/ui/GuidianLogo";
+import Image from "next/image";
 
 export default function LoginPage() {
   const login = useLogin();
@@ -45,7 +45,7 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div className="flex flex-col items-center gap-2 mb-8">
-          <GuidianLogo size={36} strokeColor="#162D4A" accentColor="#C98A2A" />
+          <Image src="/brand/logo-light.svg" alt="Guidian" width={130} height={24} priority />
           <span className="text-xl font-semibold text-[#1D1D1F]">Guidian</span>
           <p className="text-sm text-[#6E6E73]">Sign in to your account</p>
         </div>

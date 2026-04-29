@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { GuidianLogo } from "@/components/ui/GuidianLogo";
+import Image from "next/image";
 import { useMe } from "@/lib/api/hooks";
 import { getAccessToken } from "@/lib/api/client";
 import { API_BASE, streamSSE } from "@/lib/api/sse";
@@ -115,7 +115,7 @@ export default function OnboardingPage() {
       {/* Logo */}
       <div className="flex justify-center pt-8 pb-4 shrink-0">
         <div className="flex items-center gap-2.5">
-          <GuidianLogo size={28} strokeColor="#162D4A" accentColor="#C98A2A" />
+          <Image src="/brand/logo-light.svg" alt="Guidian" width={110} height={20} priority />
           <span className="text-sm font-semibold text-[#1D1D1F]">Guidian</span>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { LearnerHydrator } from "@/components/LearnerHydrator";
 import { NovaProvider } from "@/components/NovaProvider";
-import { NovaVoice } from "@/components/NovaVoice";
+import { NovaGate } from "@/components/NovaGate";
 
 export const metadata: Metadata = {
   title: "Guidian",
@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppHeader />
             <ConsentBanner />
             <div id="main-content">{children}</div>
-            <NovaVoice />
+            <NovaGate />
           </NovaProvider>
         </Providers>
       </body>
