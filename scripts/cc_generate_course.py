@@ -153,12 +153,14 @@ OUTPUT (fill in all fields with real content):
           {{"id": "q4", "type": "single_choice", "prompt": "Final question", "choices": ["A", "B", "C", "D"], "correct": 1, "explanation": "Why B"}}
         ]
       }},
+      "order_index": 0,
       "clock_minutes": {clock_minutes_per_lesson},
       "requires_completion": false
     }}
   ]
 }}
 
+Note: Set order_index to 0, 1, 2, 3 for each lesson in sequence.
 Return ONLY the JSON. Nothing before {{ or after }}. Write all {lessons_per_module} lessons with real content."""
 
 
@@ -429,6 +431,11 @@ def main() -> None:
 
         # Ensure order_index is correct regardless of what claude returned
         module_data["order_index"] = i
+
+        # Ensure each lesson has order_index (required by API)
+        for j, lesson in enumerate(module_data.get("lessons", [])):
+            if "order_index" not in lesson:
+                lesson["order_index"] = j
 
         log(f"  Posting module {i + 1} to API...")
         try:
