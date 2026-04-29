@@ -220,7 +220,7 @@ def generate_module_via_claude(claude_bin: str, prompt: str, attempt: int = 1) -
         [claude_bin, "--print", "--permission-mode", "bypassPermissions", prompt],
         capture_output=True,
         text=True,
-        timeout=600,
+        timeout=1800,
         env=env,
     )
 
