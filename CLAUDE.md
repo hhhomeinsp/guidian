@@ -131,3 +131,7 @@ with SyncSessionLocal() as db:
     if m: db.delete(m); db.commit(); print('Deleted')
 "
 ```
+
+## Icons
+**Always use Lucide React** (`lucide-react`) for all icons. No other icon libraries.
+Browse available icons at lucide.dev.
