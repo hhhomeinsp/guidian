@@ -62,17 +62,17 @@ export default function CourseDetailPage({
   return (
     <Shell>
       {/* Course hero */}
-      <div className="rounded-xl bg-white px-8 py-8">
-        <h1 className="font-display text-3xl font-bold text-white leading-snug">{c.title}</h1>
+      <div className="rounded-xl px-8 py-8" style={{background: "linear-gradient(135deg, #162D4A 0%, #1E3D5C 60%, #095857 100%)"}}>
+        <h1 className="font-display text-2xl font-bold text-white leading-snug">{c.title}</h1>
         {c.description && (
-          <p className="mt-3 font-body text-mist max-w-2xl">{c.description}</p>
+          <p className="mt-3 font-body text-sm text-white/70 max-w-2xl leading-relaxed">{c.description}</p>
         )}
         <div className="mt-4 flex flex-wrap gap-3">
-          <span className="inline-flex items-center rounded-md border border-amber/60 bg-amber/20 px-3 py-1 font-body text-sm font-medium text-amber">
+          <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-sm font-medium text-white">
             {c.ceu_hours} CEU hours
           </span>
           {c.accrediting_body && (
-            <span className="inline-flex items-center rounded-md border border-mist/40 px-3 py-1 font-body text-sm text-mist">
+            <span className="inline-flex items-center rounded-full border border-white/30 px-3 py-1 text-sm text-white/80">
               {c.accrediting_body}
             </span>
           )}
