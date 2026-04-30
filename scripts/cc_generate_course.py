@@ -116,7 +116,7 @@ def build_module_prompt(
 
     lesson_titles = [f"Lesson {i+1}" for i in range(lessons_per_module)]
     
-    return f"""You are writing a module for a professional CE course. Output ONLY the JSON object below, filled in with real content. Start your response with {{ and end with }}.
+    return f"""You are writing a module for a professional CE course. CRITICAL: Your response MUST be a single JSON object with these top-level keys: "title", "description", "order_index", "lessons". Output ONLY the JSON object below, filled in with real content. Start your response with {{ and end with }}.
 
 COURSE: {course_title}
 TOPIC: {course_prompt}
@@ -455,6 +455,14 @@ def main() -> None:
                     normalized.append(STYLE_TAG_MAP[tag_lower])
                 # Skip invalid tags
             lesson["style_tags"] = normalized if normalized else ["visual", "read"]
+
+        # Pre-validate: module MUST have title and lessons before posting
+        if not isinstance(module_data.get("title"), str) or not isinstance(module_data.get("lessons"), list):
+            err = f"Module {i+1} missing title or lessons (got keys: {list(module_data.keys())})"
+            log(f"ERROR: {err}")
+            job_state.update({"status": "failed", "error": err})
+            update_job_file(args.job_file, job_state)
+            sys.exit(1)
 
         log(f"  Posting module {i + 1} to API...")
         try:
