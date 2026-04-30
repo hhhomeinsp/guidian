@@ -226,9 +226,22 @@ def extract_json(text: str) -> dict:
     # Find all JSON objects and prefer the one with 'title' AND 'lessons' (module structure)
     all_objects = find_all_json_objects(text)
     
-    # Priority 1: has both 'title' and 'lessons' (full module)
+    # Priority 1: has "title" + "lessons" as a non-empty list, and lacks lesson-level keys
     for obj in all_objects:
-        if isinstance(obj, dict) and "title" in obj and "lessons" in obj:
+        if (isinstance(obj, dict)
+                and "title" in obj
+                and isinstance(obj.get("lessons"), list)
+                and len(obj.get("lessons", [])) > 0
+                and "mdx_content" not in obj      # mdx_content means this is a lesson, not a module
+                and "objectives" not in obj):     # objectives at top-level = lesson object
+            return obj
+    
+    # Priority 1b: has "title" + "lessons" list (even if empty, still a module shell)
+    for obj in all_objects:
+        if (isinstance(obj, dict)
+                and "title" in obj
+                and isinstance(obj.get("lessons"), list)
+                and "mdx_content" not in obj):
             return obj
     
     # Priority 2: largest object (most content)
