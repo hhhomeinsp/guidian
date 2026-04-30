@@ -28,10 +28,21 @@ class QuizAttemptRead(BaseModel):
     lesson_id: UUID
     score: float
     passed: bool
+    attempt_number: int = 1
     created_at: datetime
     # Per-question feedback is computed at submission time and not persisted
     # beyond the raw answers JSON — client receives it once on the response.
     per_question: list[QuestionResult] = Field(default_factory=list)
+
+
+class QuizBestAttemptRead(BaseModel):
+    """Best attempt summary for the current learner on a single lesson."""
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    score: float
+    passed: bool
+    attempt_number: int
+    created_at: datetime
 
 
 class QuizAttemptsSummary(BaseModel):

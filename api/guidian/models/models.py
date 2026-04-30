@@ -165,9 +165,25 @@ class QuizAttempt(Base, UUIDMixin, TimestampMixin):
 
     user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     lesson_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False)
-    score: Mapped[float] = mapped_column(Float, nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)  # 0..1, equivalent to score_pct
     passed: Mapped[bool] = mapped_column(Boolean, nullable=False)
     answers: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    attempt_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False, server_default="1")
+
+
+class ExamAttempt(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "exam_attempts"
+
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    course_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    score_pct: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    answers: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    questions: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)  # snapshot of served questions
+    passed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    attempt_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    time_spent_ms: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class ComplianceAuditLog(Base, UUIDMixin):

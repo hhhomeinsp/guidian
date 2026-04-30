@@ -20,6 +20,7 @@ from guidian.schemas.quiz import (
     QuizAttemptRead,
     QuizAttemptRequest,
     QuizAttemptsSummary,
+    QuizBestAttemptRead,
 )
 from guidian.services.learner_profile import apply_quiz_result, get_or_create_profile
 from guidian.services.quiz_scoring import score_quiz
@@ -76,12 +77,23 @@ async def submit_quiz_attempt(
     min_passing = _min_passing_score(course)
     passed = score >= min_passing
 
+    prior_count = (
+        await db.execute(
+            select(func.count(QuizAttempt.id)).where(
+                QuizAttempt.user_id == user.id,
+                QuizAttempt.lesson_id == lesson.id,
+            )
+        )
+    ).scalar_one()
+    attempt_number = int(prior_count) + 1
+
     attempt = QuizAttempt(
         user_id=user.id,
         lesson_id=lesson.id,
         score=score,
         passed=passed,
         answers=body.answers,
+        attempt_number=attempt_number,
     )
     db.add(attempt)
 
@@ -142,9 +154,33 @@ async def submit_quiz_attempt(
         lesson_id=attempt.lesson_id,
         score=attempt.score,
         passed=attempt.passed,
+        attempt_number=attempt.attempt_number,
         created_at=attempt.created_at,
         per_question=per_question,
     )
+
+
+@router.get("/{lesson_id}/quiz/best", response_model=QuizBestAttemptRead | None)
+async def quiz_best_attempt(
+    lesson_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Return the learner's best attempt for this lesson, or null if none."""
+    row = (
+        await db.execute(
+            select(QuizAttempt)
+            .where(
+                QuizAttempt.user_id == user.id,
+                QuizAttempt.lesson_id == lesson_id,
+            )
+            .order_by(QuizAttempt.score.desc(), QuizAttempt.created_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return None
+    return QuizBestAttemptRead.model_validate(row)
 
 
 @router.get("/{lesson_id}/quiz/summary", response_model=QuizAttemptsSummary)

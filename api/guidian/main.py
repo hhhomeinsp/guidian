@@ -9,6 +9,7 @@ from guidian.routers import (
     compliance,
     courses,
     enrollments,
+    exam,
     generation,
     learner,
     organizations,
@@ -48,6 +49,7 @@ app.include_router(courses.router, prefix=api_prefix)
 app.include_router(enrollments.router, prefix=api_prefix)
 app.include_router(enrollments.progress_router, prefix=api_prefix)
 app.include_router(quiz.router, prefix=api_prefix)
+app.include_router(exam.router, prefix=api_prefix)
 app.include_router(compliance.router, prefix=api_prefix)
 app.include_router(certificates.router, prefix=api_prefix)
 app.include_router(xapi.router, prefix=api_prefix)

@@ -189,6 +189,7 @@ export interface QuizAttemptRead {
   lesson_id: UUID;
   score: number;
   passed: boolean;
+  attempt_number: number;
   created_at: ISODate;
   per_question: QuestionResult[];
 }
@@ -198,6 +199,55 @@ export interface QuizAttemptsSummary {
   passed: boolean;
   attempt_count: number;
   min_passing_score: number;
+}
+
+// --- Exam ---
+export interface ExamQuestionPublic {
+  id: string;
+  type: "single_choice" | "multiple_choice" | "true_false";
+  prompt: string;
+  choices: string[];
+  explanation?: string | null;
+}
+
+export interface ExamQuestionsRead {
+  course_id: UUID;
+  questions: ExamQuestionPublic[];
+  passing_score: number;
+  time_limit_seconds: number;
+}
+
+export interface ExamSubmitRequest {
+  answers: Record<string, QuizAnswer>;
+  time_spent_ms: number;
+}
+
+export interface ExamAttemptRead {
+  id: UUID;
+  user_id: UUID;
+  course_id: UUID;
+  score_pct: number;
+  passed: boolean;
+  attempt_number: number;
+  time_spent_ms: number;
+  started_at: ISODate;
+  completed_at?: ISODate | null;
+  correct_count: number;
+  total_count: number;
+  certificate_url?: string | null;
+  certificate_id?: UUID | null;
+}
+
+export interface ExamStatusRead {
+  course_id: UUID;
+  unlocked: boolean;
+  lessons_total: number;
+  lessons_completed: number;
+  attempt_count: number;
+  best_score: number;
+  passed: boolean;
+  passing_score: number;
+  last_attempt?: ExamAttemptRead | null;
 }
 
 // --- Compliance ---

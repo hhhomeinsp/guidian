@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   useCompliance,
   useCourse,
+  useExamStatus,
   useIssueCertificate,
   useMe,
   useMyCertificates,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { CompliancePanel, ProgressCheck } from "@/components/course";
+import { Award, ArrowRight, Lock } from "lucide-react";
 
 export default function CourseDetailPage({
   params,
@@ -22,6 +24,7 @@ export default function CourseDetailPage({
   const compliance = useCompliance(params.courseId);
   const myCerts = useMyCertificates();
   const issue = useIssueCertificate(params.courseId);
+  const examStatus = useExamStatus(params.courseId);
   const me = useMe();
   const updateIdentity = useUpdateIdentity();
 
@@ -111,6 +114,20 @@ export default function CourseDetailPage({
           </div>
         ))}
       </div>
+
+      {/* Final Exam CTA */}
+      {examStatus.data && (
+        <FinalExamCard
+          courseId={params.courseId}
+          unlocked={examStatus.data.unlocked}
+          lessonsCompleted={examStatus.data.lessons_completed}
+          lessonsTotal={examStatus.data.lessons_total}
+          passed={examStatus.data.passed}
+          bestScore={examStatus.data.best_score}
+          attemptCount={examStatus.data.attempt_count}
+          existingCertId={existingCert?.id ?? null}
+        />
+      )}
 
       {/* Compliance / certificate section */}
       {compliance.data ? (
@@ -235,4 +252,108 @@ export default function CourseDetailPage({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return <main className="container space-y-6 py-8 min-h-screen bg-[#F5F5F7]">{children}</main>;
+}
+
+function FinalExamCard({
+  courseId,
+  unlocked,
+  lessonsCompleted,
+  lessonsTotal,
+  passed,
+  bestScore,
+  attemptCount,
+  existingCertId,
+}: {
+  courseId: string;
+  unlocked: boolean;
+  lessonsCompleted: number;
+  lessonsTotal: number;
+  passed: boolean;
+  bestScore: number;
+  attemptCount: number;
+  existingCertId: string | null;
+}) {
+  const lessonPct = lessonsTotal
+    ? Math.min(100, Math.round((lessonsCompleted / lessonsTotal) * 100))
+    : 0;
+
+  if (passed && existingCertId) {
+    return (
+      <div className="rounded-2xl border border-[#34C759]/30 bg-white p-5 shadow-card md:p-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#34C759]/10">
+            <Award className="h-6 w-6 text-[#34C759]" aria-hidden />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <p className="text-base font-semibold text-[#1D1D1F]">
+              You passed the final exam
+            </p>
+            <p className="text-sm text-[#6E6E73]">
+              Best score: {Math.round(bestScore * 100)}% · {attemptCount} attempt
+              {attemptCount === 1 ? "" : "s"}
+            </p>
+          </div>
+          <Link
+            href={`/certificates/${existingCertId}`}
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#1D1D1F] px-5 py-2 text-sm font-medium text-white hover:bg-[#2A2A2D]"
+          >
+            View certificate <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!unlocked) {
+    return (
+      <div className="rounded-2xl border border-[#D2D2D7] bg-white p-5 shadow-card md:p-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F5F5F7]">
+            <Lock className="h-6 w-6 text-[#6E6E73]" aria-hidden />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <p className="text-base font-semibold text-[#1D1D1F]">
+              Final Exam locked
+            </p>
+            <p className="text-sm text-[#6E6E73]">
+              Complete all lessons to unlock the final exam ({lessonsCompleted} of{" "}
+              {lessonsTotal} done)
+            </p>
+            <div className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-[#F5F5F7]">
+              <div
+                className="h-full bg-[#0071E3] transition-all duration-300"
+                style={{ width: `${lessonPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/courses/${courseId}/exam`}
+      className="block rounded-2xl border border-[#0071E3]/40 bg-gradient-to-br from-[#0071E3] to-[#0E5FCB] p-5 text-white shadow-card transition-all hover:shadow-lg md:p-6"
+    >
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/15">
+          <Award className="h-6 w-6 text-white" aria-hidden />
+        </div>
+        <div className="flex-1 min-w-[200px]">
+          <p className="text-base font-semibold text-white md:text-lg">
+            {passed ? "Retake the Final Exam" : "Take the Final Exam"}
+          </p>
+          <p className="text-sm text-white/80">
+            {passed
+              ? `Best: ${Math.round(bestScore * 100)}% · ${attemptCount} attempt${attemptCount === 1 ? "" : "s"}`
+              : attemptCount > 0
+                ? `Best: ${Math.round(bestScore * 100)}% · ${attemptCount} attempt${attemptCount === 1 ? "" : "s"} · 75% to pass`
+                : "Up to 50 questions · 90 minute limit · 75% to pass"}
+          </p>
+        </div>
+        <ArrowRight className="h-5 w-5 text-white" aria-hidden />
+      </div>
+    </Link>
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, X } from "lucide-react";
+import { Check, RefreshCw, X } from "lucide-react";
 import type { QuizAnswer, QuizAttemptRead, QuizPayload, QuizQuestion } from "@/lib/api/schema";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,14 +30,27 @@ export interface QuizProps {
   onServerSubmit?: (body: {
     answers: Record<string, QuizAnswer>;
   }) => Promise<QuizAttemptRead>;
+  /** Fired when the learner clicks "Retake quiz" after a failed attempt. */
+  onRetake?: () => void;
 }
 
-export function Quiz({ quiz, passingScore = 0.7, onSubmit, onServerSubmit }: QuizProps) {
+export function Quiz({ quiz, passingScore = 0.7, onSubmit, onServerSubmit, onRetake }: QuizProps) {
   const [answers, setAnswers] = React.useState<Record<string, Answer>>({});
   const [submitted, setSubmitted] = React.useState(false);
   const [serverResult, setServerResult] = React.useState<QuizAttemptRead | null>(null);
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  const handleRetake = () => {
+    setAnswers({});
+    setSubmitted(false);
+    setServerResult(null);
+    setError(null);
+    onRetake?.();
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   const serverFeedback = React.useMemo(() => {
     if (!serverResult) return null;
@@ -59,6 +72,13 @@ export function Quiz({ quiz, passingScore = 0.7, onSubmit, onServerSubmit }: Qui
   }, [submitted, serverResult, quiz.questions, answers]);
 
   const passed = serverResult ? serverResult.passed : score >= passingScore;
+  const totalQuestions = quiz.questions.length;
+  const correctCount = React.useMemo(() => {
+    if (!submitted) return 0;
+    if (serverResult) return serverResult.per_question.filter((r) => r.correct).length;
+    return quiz.questions.reduce((acc, q) => (isCorrect(q, answers[q.id]) ? acc + 1 : acc), 0);
+  }, [submitted, serverResult, quiz.questions, answers]);
+  const passingPct = Math.round((serverResult ? passingScore : passingScore) * 100);
 
   const toServerAnswers = (): Record<string, QuizAnswer> => {
     const out: Record<string, QuizAnswer> = {};
@@ -112,21 +132,65 @@ export function Quiz({ quiz, passingScore = 0.7, onSubmit, onServerSubmit }: Qui
         />
       ))}
       {error && <p className="text-sm text-[#FF3B30]">{error}</p>}
-      <div className="flex items-center justify-between">
-        <Button onClick={handleSubmit} disabled={submitted || pending}>
-          {pending ? "Submitting…" : submitted ? "Submitted" : "Submit answers"}
-        </Button>
-        {submitted && (
-          <p className="text-sm">
-            Score: <span className="font-semibold text-[#1D1D1F]">{Math.round(score * 100)}%</span>{" "}
-            {passed ? (
-              <span className="text-[#34C759] font-medium">· Passed</span>
-            ) : (
-              <span className="text-[#FF3B30]">· Not yet passing</span>
+
+      {submitted ? (
+        <div
+          className={cn(
+            "rounded-[18px] border bg-white px-5 py-5 shadow-card",
+            passed ? "border-[#34C759]/40" : "border-[#FF3B30]/40",
+          )}
+        >
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                passed ? "bg-[#34C759]/10" : "bg-[#FF3B30]/10",
+              )}
+              aria-hidden
+            >
+              {passed ? (
+                <Check className="h-5 w-5 text-[#34C759]" />
+              ) : (
+                <X className="h-5 w-5 text-[#FF3B30]" />
+              )}
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <p className="text-sm font-semibold text-[#1D1D1F]">
+                You scored {correctCount}/{totalQuestions} ({Math.round(score * 100)}%)
+                {passed ? (
+                  <span className="text-[#34C759]"> — Passed!</span>
+                ) : (
+                  <span className="text-[#FF3B30]"> — Needs {passingPct}% to pass</span>
+                )}
+              </p>
+              <p className="mt-1 text-xs text-[#6E6E73]">
+                {passed
+                  ? "Great work. You can advance to the next lesson."
+                  : "Review the explanations above, then retake to advance."}
+              </p>
+            </div>
+            {!passed && (
+              <Button
+                onClick={handleRetake}
+                size="sm"
+                className="rounded-full bg-[#0071E3] text-white hover:bg-[#0077ED]"
+              >
+                <RefreshCw className="mr-1.5 h-4 w-4" aria-hidden />
+                Retake quiz
+              </Button>
             )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <Button onClick={handleSubmit} disabled={pending}>
+            {pending ? "Submitting…" : "Submit answers"}
+          </Button>
+          <p className="text-xs text-[#6E6E73]">
+            {totalQuestions} question{totalQuestions === 1 ? "" : "s"} · {passingPct}% to pass
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,6 +17,10 @@ import type {
   Course,
   CourseGenerationRequest,
   Enrollment,
+  ExamAttemptRead,
+  ExamQuestionsRead,
+  ExamStatusRead,
+  ExamSubmitRequest,
   GenerationJobRead,
   IdentityVerifyRequest,
   LearnerMemoryRead,
@@ -163,6 +167,39 @@ export function useSubmitQuiz(lessonId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["quiz", "summary", lessonId] });
       qc.invalidateQueries({ queryKey: ["learner", "profile"] });
+    },
+  });
+}
+
+// --- Exam ---
+export function useExamStatus(courseId: string | undefined) {
+  return useQuery({
+    queryKey: ["exam", "status", courseId],
+    queryFn: () => apiFetch<ExamStatusRead>(`/courses/${courseId}/exam/status`),
+    enabled: !!courseId,
+    staleTime: 10_000,
+  });
+}
+
+export function useStartExam(courseId: string) {
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<ExamQuestionsRead>(`/courses/${courseId}/exam/questions`),
+  });
+}
+
+export function useSubmitExam(courseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ExamSubmitRequest) =>
+      apiFetch<ExamAttemptRead>(`/courses/${courseId}/exam/submit`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["exam", "status", courseId] });
+      qc.invalidateQueries({ queryKey: ["compliance", courseId] });
+      qc.invalidateQueries({ queryKey: ["certificates", "me"] });
     },
   });
 }
