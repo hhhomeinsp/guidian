@@ -30,7 +30,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-CLAUDE_BIN_DEFAULT = "/home/claudeuser/.local/bin/claude"
+CLAUDE_BIN_DEFAULT = "/home/claudeuser/.local/bin/claude-safe"  # OAuth wrapper — NEVER use raw claude
 PROGRESS_FILE_DEFAULT = "/tmp/cc_course_progress.json"
 MAX_RETRIES = 3
 
@@ -256,6 +256,8 @@ def generate_module_via_claude(claude_bin: str, prompt: str, attempt: int = 1) -
     env = dict(os.environ)
     env["PATH"] = f"/home/claudeuser/.local/bin:{env.get('PATH', '')}"
 
+    # NEVER pass ANTHROPIC_API_KEY to claude — forces OAuth (Max plan)
+    safe_env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
     result = subprocess.run(
         [claude_bin, "--print", "--permission-mode", "bypassPermissions", prompt],
         capture_output=True,

@@ -1,3 +1,23 @@
+## 🚨 HARD RULE — Claude CLI MUST Use OAuth (Max Plan)
+
+**NEVER** pass `ANTHROPIC_API_KEY` to the `claude` CLI. **NEVER** run:
+```
+ANTHROPIC_API_KEY=sk-... claude ...
+```
+This bypasses OAuth and bills the Anthropic account directly at API rates.
+
+**ALWAYS** use the OAuth wrapper:
+```
+/home/claudeuser/.local/bin/claude-safe ...
+```
+Or just `claude-safe` if in PATH. This wrapper unsets `ANTHROPIC_API_KEY` and forces OAuth auth,
+which uses Patrick's Claude Code Max plan (no per-token billing).
+
+Patrick has a **Claude Code Max plan** — all Claude CLI usage is pre-paid via that subscription.
+Using the API key instead cost $500 in a single session. Never repeat this.
+
+---
+
 # Guidian — CLAUDE.md
 
 AI-native universal learning platform. Generates, delivers, and tracks education for every stage of a learner's life — from vocational exploration to professional CE renewal. Deploys on Render. Repo: https://github.com/hhhomeinsp/guidian
