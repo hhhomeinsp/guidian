@@ -165,52 +165,78 @@ Return ONLY the JSON. Nothing before {{ or after }}. Write all {lessons_per_modu
 
 
 def extract_json(text: str) -> dict:
-    """Extract a JSON object from claude output, handling surrounding text or code fences."""
+    """Extract a JSON object from claude output. Prefers objects with 'title' and 'lessons' keys (module-level)."""
     text = text.strip()
 
-    # Direct parse
+    def find_all_json_objects(s: str) -> list:
+        """Find all valid JSON objects in a string, return them sorted by preference."""
+        objects = []
+        i = 0
+        while i < len(s):
+            if s[i] == '{':
+                depth = 0
+                end = -1
+                for j, ch in enumerate(s[i:], i):
+                    if ch == '{': depth += 1
+                    elif ch == '}':
+                        depth -= 1
+                        if depth == 0:
+                            end = j
+                            break
+                if end > i:
+                    candidate = s[i:end+1]
+                    try:
+                        obj = json.loads(candidate)
+                        objects.append(obj)
+                    except:
+                        pass
+                    i = end + 1
+                else:
+                    i += 1
+            else:
+                i += 1
+        return objects
+
+    # Try direct parse first
     try:
-        return json.loads(text)
+        obj = json.loads(text)
+        if isinstance(obj, dict): return obj
     except json.JSONDecodeError:
         pass
 
-    # Strip ```json ... ``` or ``` ... ``` fences
+    # Strip code fences
     if "```" in text:
         lines = text.splitlines()
-        inner: list[str] = []
+        inner = []
         in_block = False
         for line in lines:
             if line.startswith("```") and not in_block:
-                in_block = True
-                continue
+                in_block = True; continue
             elif line.startswith("```") and in_block:
                 break
             elif in_block:
                 inner.append(line)
         stripped = "\n".join(inner).strip()
         try:
-            return json.loads(stripped)
+            obj = json.loads(stripped)
+            if isinstance(obj, dict): return obj
         except json.JSONDecodeError:
             pass
 
-    # Find outermost JSON object by brace matching
-    start = text.find("{")
-    if start == -1:
-        raise ValueError("No JSON object found in claude output")
-    depth = 0
-    end = -1
-    for i, ch in enumerate(text[start:], start):
-        if ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                end = i
-                break
-    if end == -1:
-        raise ValueError("Unterminated JSON object in claude output")
-    return json.loads(text[start : end + 1])
+    # Find all JSON objects and prefer the one with 'title' AND 'lessons' (module structure)
+    all_objects = find_all_json_objects(text)
+    
+    # Priority 1: has both 'title' and 'lessons' (full module)
+    for obj in all_objects:
+        if isinstance(obj, dict) and "title" in obj and "lessons" in obj:
+            return obj
+    
+    # Priority 2: largest object (most content)
+    if all_objects:
+        largest = max(all_objects, key=lambda o: len(json.dumps(o)))
+        return largest
 
+    raise ValueError("No JSON object found in claude output")
 
 def generate_module_via_claude(claude_bin: str, prompt: str, attempt: int = 1) -> dict:
     log(f"  Running claude (attempt {attempt}/{MAX_RETRIES})...")
