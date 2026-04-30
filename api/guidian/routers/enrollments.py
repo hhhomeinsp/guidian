@@ -10,12 +10,14 @@ from guidian.db.session import get_db
 from guidian.models.models import (
     ComplianceAuditLog,
     Course,
+    CoursePurchase,
     Enrollment,
     Lesson,
     LessonProgress,
     Module,
     QuizAttempt,
     User,
+    UserRole,
 )  # noqa: F401 — Course imported for xAPI statement context
 from guidian.routers.deps import get_current_user
 from guidian.schemas.enrollment import (
@@ -44,6 +46,28 @@ async def enroll(
     course = (await db.execute(select(Course).where(Course.id == body.course_id))).scalar_one_or_none()
     if not course:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Course not found")
+
+    # Gate enrollment on a completed course purchase. Admins bypass — they
+    # need access for QA and content review without paying for every course.
+    if user.role != UserRole.admin:
+        purchase = (
+            await db.execute(
+                select(CoursePurchase).where(
+                    CoursePurchase.user_id == user.id,
+                    CoursePurchase.course_id == course.id,
+                    CoursePurchase.status == "completed",
+                )
+            )
+        ).scalar_one_or_none()
+        if purchase is None:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail={
+                    "code": "purchase_required",
+                    "checkout_url": "/billing/course/checkout",
+                    "course_id": str(course.id),
+                },
+            )
 
     enrollment = Enrollment(user_id=user.id, course_id=course.id)
     db.add(enrollment)

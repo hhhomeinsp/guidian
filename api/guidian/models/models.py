@@ -357,8 +357,22 @@ class Subscription(Base, UUIDMixin, TimestampMixin):
     current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     org_seat_count: Mapped[int | None] = mapped_column(Integer)
+    nova_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
 
     user: Mapped["User"] = relationship()
+
+
+class CoursePurchase(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "course_purchases"
+
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    course_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    stripe_payment_intent_id: Mapped[str | None] = mapped_column(Text)
+    stripe_checkout_session_id: Mapped[str | None] = mapped_column(Text)
+    amount_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    status: Mapped[str] = mapped_column(Text, default="pending", nullable=False)  # pending|completed|refunded
+
+    __table_args__ = (UniqueConstraint("user_id", "course_id", name="uq_course_purchase_user_course"),)
 
 
 class ComplianceSubmission(Base, UUIDMixin, TimestampMixin):

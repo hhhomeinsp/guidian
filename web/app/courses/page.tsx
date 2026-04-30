@@ -4,23 +4,33 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   useCourses,
-  useEnroll,
   useLearnerProfile,
   useMe,
-  useMyEnrollments,
 } from "@/lib/api/hooks";
-import { Button } from "@/components/ui/button";
+import { apiFetch, getAccessToken } from "@/lib/api/client";
+import { formatPriceUSD, priceForSlug } from "@/lib/pricing";
+
+interface MyCoursesResponse {
+  course_ids: string[];
+}
 
 export default function CoursesPage() {
   const router = useRouter();
   const me = useMe();
   const profile = useLearnerProfile();
   const courses = useCourses();
-  const enrollments = useMyEnrollments();
-  const enroll = useEnroll();
+  const myCourses = useQuery({
+    queryKey: ["billing", "my-courses"],
+    queryFn: () => apiFetch<MyCoursesResponse>("/billing/my-courses"),
+    enabled: !!getAccessToken(),
+    retry: false,
+  });
   const [query, setQuery] = useState("");
+  const [buyingCourseId, setBuyingCourseId] = useState<string | null>(null);
+  const [buyError, setBuyError] = useState<string | null>(null);
 
   useEffect(() => {
     if (
@@ -31,6 +41,22 @@ export default function CoursesPage() {
       router.replace("/onboarding");
     }
   }, [me.data, profile.data, router]);
+
+  const ownedIds = useMemo(
+    () => new Set(myCourses.data?.course_ids ?? []),
+    [myCourses.data],
+  );
+
+  const filteredCourses = useMemo(() => {
+    const list = courses.data ?? [];
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) => {
+      const title = (c.title ?? "").toLowerCase();
+      const desc = (c.description ?? "").toLowerCase();
+      return title.includes(q) || desc.includes(q);
+    });
+  }, [courses.data, query]);
 
   if (me.isLoading) return <Shell>Loading…</Shell>;
   if (me.error || !me.data) {
@@ -47,25 +73,43 @@ export default function CoursesPage() {
     );
   }
 
-  const enrolledIds = new Set((enrollments.data ?? []).map((e) => e.course_id));
+  const isAdmin = me.data?.role === "admin";
 
-  const filteredCourses = useMemo(() => {
-    const list = courses.data ?? [];
-    const q = query.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((c) => {
-      const title = (c.title ?? "").toLowerCase();
-      const desc = (c.description ?? "").toLowerCase();
-      return title.includes(q) || desc.includes(q);
-    });
-  }, [courses.data, query]);
+  async function handleBuy(courseId: string) {
+    setBuyError(null);
+    setBuyingCourseId(courseId);
+    try {
+      const res = await apiFetch<{ checkout_url: string | null; message?: string }>(
+        "/billing/course/checkout",
+        {
+          method: "POST",
+          body: JSON.stringify({ course_id: courseId }),
+        },
+      );
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;
+      }
+      if (res.message === "already_owned") {
+        router.push(`/courses/${courseId}`);
+        return;
+      }
+      setBuyError("Could not start checkout. Try again.");
+    } catch {
+      setBuyError("Could not start checkout. Try again.");
+    } finally {
+      setBuyingCourseId(null);
+    }
+  }
 
   return (
     <Shell>
       <div className="pb-4 border-b border-[#D2D2D7]">
         <h1 className="text-3xl font-bold text-[#1D1D1F]">Course catalog</h1>
       </div>
-      <p className="text-[#6E6E73]">Enroll in a course to begin earning CEU hours.</p>
+      <p className="text-[#6E6E73]">
+        Buy a course once and own it forever. Add Pro for Nova AI on every course you own.
+      </p>
 
       <div className="relative">
         <Search
@@ -86,11 +130,14 @@ export default function CoursesPage() {
       {courses.error && (
         <p className="text-[#FF3B30]">Failed to load courses: {String(courses.error)}</p>
       )}
+      {buyError && <p className="text-[#FF3B30] text-sm">{buyError}</p>}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {filteredCourses.map((course) => {
-          const enrolled = enrolledIds.has(course.id);
-          const stageColor = getStageColor(course.stage ?? "ce");
+          const owned = isAdmin || ownedIds.has(course.id);
+          const priceCents = priceForSlug(course.slug);
+          const priceLabel = formatPriceUSD(priceCents);
+          const buying = buyingCourseId === course.id;
           return (
             <div
               key={course.id}
@@ -115,31 +162,33 @@ export default function CoursesPage() {
                   >
                     {course.ceu_hours} CEU
                   </span>
-                  <span
-                    className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
-                    style={{
-                      backgroundColor: "rgba(22,45,74,0.08)",
-                      color: "#162D4A",
-                    }}
-                  >
-                    {course.status}
-                  </span>
+                  {!owned && (
+                    <span className="text-sm font-semibold text-[#1D1D1F]">
+                      {priceLabel}
+                    </span>
+                  )}
+                  {owned && (
+                    <span className="rounded-full bg-[#34C759]/15 px-2.5 py-0.5 text-xs font-medium text-[#0E7C2D]">
+                      Owned
+                    </span>
+                  )}
                 </div>
-                {enrolled ? (
+                {owned ? (
                   <Link
                     href={`/courses/${course.id}`}
                     className="inline-flex items-center justify-center rounded-full bg-[#0071E3] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0077ED]"
                   >
-                    Continue →
+                    Continue Learning →
                   </Link>
                 ) : (
-                  <Button
-                    className="w-full rounded-full"
-                    onClick={() => enroll.mutate(course.id)}
-                    disabled={enroll.isPending}
+                  <button
+                    type="button"
+                    onClick={() => handleBuy(course.id)}
+                    disabled={buying}
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#0071E3] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0077ED] disabled:opacity-60"
                   >
-                    {enroll.isPending ? "Enrolling…" : "Enroll"}
-                  </Button>
+                    {buying ? "Starting checkout…" : `Buy — ${priceLabel}`}
+                  </button>
                 )}
               </div>
             </div>
@@ -148,18 +197,6 @@ export default function CoursesPage() {
       </div>
     </Shell>
   );
-}
-
-function getStageColor(stage: string): string {
-  const map: Record<string, string> = {
-    "pre-college": "#5E5CE6",
-    vocational: "#30B0C7",
-    college: "#0071E3",
-    certif: "#34C759",
-    licensure: "#1D1D1F",
-    ce: "#FF9F0A",
-  };
-  return map[stage] ?? "#0071E3";
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

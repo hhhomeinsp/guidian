@@ -2,10 +2,17 @@
 
 import * as React from "react";
 import { useNovaContext } from "./NovaProvider";
-import { getAccessToken } from "@/lib/api/client";
+import { apiFetch, getAccessToken } from "@/lib/api/client";
 import { API_BASE } from "@/lib/api/sse";
 
 type NovaState = "idle" | "connecting" | "listening" | "speaking" | "error";
+
+interface SubscriptionStatus {
+  plan: string;
+  status: string;
+  nova_enabled?: boolean;
+  current_period_end?: string | null;
+}
 
 interface TranscriptEntry {
   id: string;
@@ -107,6 +114,9 @@ export function NovaVoice() {
   const [errorMsg, setErrorMsg] = React.useState("");
   const mutedRef = React.useRef(false);
   const [mutedDisplay, setMutedDisplay] = React.useState(false);
+  const [showProUpsell, setShowProUpsell] = React.useState(false);
+  const [upgrading, setUpgrading] = React.useState(false);
+  const [upgradeError, setUpgradeError] = React.useState("");
 
   const wsRef = React.useRef<WebSocket | null>(null);
   const audioCtxRef = React.useRef<AudioContext | null>(null);
@@ -174,6 +184,9 @@ export function NovaVoice() {
         const chunk = playbackQueueRef.current.shift();
         if (!chunk || !audioCtxRef.current) {
           isPlayingRef.current = false;
+          if (audioCtxRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+            setState("listening");
+          }
           return;
         }
         const buf = audioCtxRef.current.createBuffer(1, chunk.length, 24000);
@@ -257,7 +270,7 @@ export function NovaVoice() {
           processorRef.current = processor;
 
           processor.onaudioprocess = (e) => {
-            if (mutedRef.current || ws.readyState !== WebSocket.OPEN) return;
+            if (mutedRef.current || isPlayingRef.current || ws.readyState !== WebSocket.OPEN) return;
             const float32 = e.inputBuffer.getChannelData(0);
             const int16 = new Int16Array(float32.length);
             for (let i = 0; i < float32.length; i++) {
@@ -290,9 +303,7 @@ export function NovaVoice() {
           setState("speaking");
           playPcm16(event.audio);
         } else if (t === "audio_done") {
-          setState("listening");
-          isPlayingRef.current = false;
-          playbackQueueRef.current = [];
+          // playNext() drains the queue and transitions state when playback finishes
         } else if (t === "transcript_delta") {
           setTranscript((prev) => {
             const last = prev[prev.length - 1];
@@ -342,11 +353,58 @@ export function NovaVoice() {
     }
   }, [playPcm16]);
 
-  // Expose startSession so other components can trigger it
+  const requestStart = React.useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) {
+      // Allow startSession to handle the no-token error UX
+      void startSession();
+      return;
+    }
+    try {
+      const sub = await apiFetch<SubscriptionStatus>("/billing/subscription");
+      const novaAllowed =
+        sub.nova_enabled === true ||
+        (sub.plan === "pro" && sub.status === "active");
+      if (!novaAllowed) {
+        setUpgradeError("");
+        setShowProUpsell(true);
+        return;
+      }
+    } catch {
+      // If the subscription lookup fails, fall through and let the session
+      // attempt surface the error rather than blocking the user entirely.
+    }
+    void startSession();
+  }, [startSession]);
+
+  const handleUpgrade = React.useCallback(async () => {
+    setUpgradeError("");
+    setUpgrading(true);
+    try {
+      const res = await apiFetch<{ checkout_url: string | null }>(
+        "/billing/checkout",
+        {
+          method: "POST",
+          body: JSON.stringify({ plan: "pro" }),
+        },
+      );
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;
+      }
+      setUpgradeError("Could not start checkout. Try again.");
+    } catch {
+      setUpgradeError("Could not start checkout. Try again.");
+    } finally {
+      setUpgrading(false);
+    }
+  }, []);
+
+  // Expose requestStart so other components can trigger it (with the gate)
   React.useEffect(() => {
-    setActivateNova(() => startSession);
+    setActivateNova(() => requestStart);
     return () => setActivateNova(null);
-  }, [startSession, setActivateNova]);
+  }, [requestStart, setActivateNova]);
 
   const handleInterrupt = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -489,9 +547,66 @@ export function NovaVoice() {
         </div>
       )}
 
+      {/* Pro upsell modal — gates Nova behind the Pro subscription */}
+      {showProUpsell && (
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Upgrade to Pro"
+          onClick={() => setShowProUpsell(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-semibold text-[#1D1D1F]">
+              Upgrade to Pro
+            </h2>
+            <p className="mt-1 text-sm text-[#6E6E73]">
+              $19/mo to unlock Nova AI Instructor on every course you own.
+            </p>
+            <ul className="mt-4 space-y-2 text-sm text-[#1D1D1F]">
+              <li className="flex items-start gap-2">
+                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-[#0071E3]" />
+                Live voice tutoring on every course
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-[#0071E3]" />
+                Personalized study plans &amp; memory
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-[#0071E3]" />
+                Priority support &amp; early access
+              </li>
+            </ul>
+            {upgradeError && (
+              <p className="mt-3 text-sm text-[#FF3B30]">{upgradeError}</p>
+            )}
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowProUpsell(false)}
+                className="flex-1 rounded-full border border-[#D2D2D7] px-4 py-2.5 text-sm font-medium text-[#1D1D1F] transition-colors hover:bg-[#F5F5F7]"
+              >
+                Not now
+              </button>
+              <button
+                type="button"
+                onClick={handleUpgrade}
+                disabled={upgrading}
+                className="flex-1 rounded-full bg-[#0071E3] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#0077ED] disabled:opacity-60"
+              >
+                {upgrading ? "Starting…" : "Upgrade Now"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating Nova button */}
       <button
-        onClick={open ? stopSession : startSession}
+        onClick={open ? stopSession : requestStart}
         aria-label={open ? "Close Nova voice assistant" : "Open Nova voice assistant"}
         className={`
           fixed z-[999] flex items-center justify-center rounded-full text-white
