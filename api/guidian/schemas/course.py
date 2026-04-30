@@ -73,6 +73,15 @@ class CourseCreate(BaseModel):
     ceu_rules: dict = Field(default_factory=dict)
 
 
+class CourseUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    ceu_hours: float | None = None
+    accrediting_body: str | None = None
+    state_approvals: list[dict] | None = None
+    ceu_rules: dict | None = None
+
+
 class CourseRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID

@@ -375,6 +375,19 @@ class CoursePurchase(Base, UUIDMixin, TimestampMixin):
     __table_args__ = (UniqueConstraint("user_id", "course_id", name="uq_course_purchase_user_course"),)
 
 
+class WaitlistEntry(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "waitlist_entries"
+
+    email: Mapped[str] = mapped_column(String(320), nullable=False, index=True)
+    state_code: Mapped[str] = mapped_column(String(2), nullable=False)
+    course_slug: Mapped[str] = mapped_column(String(128), nullable=False)
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        UniqueConstraint("email", "state_code", "course_slug", name="uq_waitlist_email_state_course"),
+    )
+
+
 class ComplianceSubmission(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "compliance_submissions"
 

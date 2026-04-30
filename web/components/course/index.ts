@@ -43,4 +43,6 @@ export type { CertificateProps } from "./Certificate";
 export { Checklist } from "./Checklist";
 export type { ChecklistProps, ChecklistItem } from "./Checklist";
 
+export { StateEligibilityChecker } from "./StateEligibilityChecker";
+
 export * from "./fixtures";

@@ -17,6 +17,7 @@ from guidian.schemas.course import (
     CourseCreate,
     CourseDetail,
     CourseRead,
+    CourseUpdate,
     LessonCreate,
     LessonRead,
     ModuleCreate,
@@ -79,6 +80,23 @@ async def get_course(course_id: UUID, db: AsyncSession = Depends(get_db), _: Use
     course = (await db.execute(stmt)).scalar_one_or_none()
     if not course:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    return course
+
+
+@router.patch("/{course_id}", response_model=CourseRead)
+async def update_course(
+    course_id: UUID,
+    body: CourseUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(_author_roles()),
+):
+    course = (await db.execute(select(Course).where(Course.id == course_id))).scalar_one_or_none()
+    if not course:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(course, field, value)
+    await db.commit()
+    await db.refresh(course)
     return course
 
 

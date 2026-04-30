@@ -24,6 +24,7 @@ from guidian.routers.privacy import router as privacy_router
 from guidian.routers.scorm import router as scorm_router
 from guidian.routers.teacher import router as teacher_router
 from guidian.routers.nova import router as nova_router
+from guidian.routers.waitlist import router as waitlist_router
 
 app = FastAPI(title=settings.PROJECT_NAME, version="0.1.0")
 
@@ -63,3 +64,4 @@ app.include_router(compliance_submissions_router, prefix=api_prefix)
 app.include_router(teacher_router, prefix=api_prefix)
 app.include_router(nova_router, prefix=api_prefix)
 app.include_router(billing_router, prefix=api_prefix)
+app.include_router(waitlist_router, prefix=api_prefix)

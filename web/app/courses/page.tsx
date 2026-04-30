@@ -12,6 +12,9 @@ import {
 } from "@/lib/api/hooks";
 import { apiFetch, getAccessToken } from "@/lib/api/client";
 import { formatPriceUSD, priceForSlug } from "@/lib/pricing";
+import { StateEligibilityChecker } from "@/components/course/StateEligibilityChecker";
+
+const HOME_INSPECTOR_SLUG = "certified-home-inspector-100hr";
 
 interface MyCoursesResponse {
   course_ids: string[];
@@ -47,15 +50,24 @@ export default function CoursesPage() {
     [myCourses.data],
   );
 
+  const homeInspectorCourse = useMemo(
+    () =>
+      (courses.data ?? []).find((c) => c.slug === HOME_INSPECTOR_SLUG) ?? null,
+    [courses.data],
+  );
+
   const filteredCourses = useMemo(() => {
     const list = courses.data ?? [];
     const q = query.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((c) => {
-      const title = (c.title ?? "").toLowerCase();
-      const desc = (c.description ?? "").toLowerCase();
-      return title.includes(q) || desc.includes(q);
-    });
+    const base = q
+      ? list.filter((c) => {
+          const title = (c.title ?? "").toLowerCase();
+          const desc = (c.description ?? "").toLowerCase();
+          return title.includes(q) || desc.includes(q);
+        })
+      : list;
+    // Home inspector course gets its own featured section above the grid.
+    return base.filter((c) => c.slug !== HOME_INSPECTOR_SLUG);
   }, [courses.data, query]);
 
   if (me.isLoading) return <Shell>Loading…</Shell>;
@@ -131,6 +143,71 @@ export default function CoursesPage() {
         <p className="text-[#FF3B30]">Failed to load courses: {String(courses.error)}</p>
       )}
       {buyError && <p className="text-[#FF3B30] text-sm">{buyError}</p>}
+
+      {homeInspectorCourse && (() => {
+        const course = homeInspectorCourse;
+        const owned = isAdmin || ownedIds.has(course.id);
+        const priceCents = priceForSlug(course.slug);
+        const priceLabel = formatPriceUSD(priceCents);
+        const buying = buyingCourseId === course.id;
+        return (
+          <section className="rounded-2xl bg-white shadow-card overflow-hidden">
+            <div className="grid gap-0 lg:grid-cols-2">
+              <div className="p-6 sm:p-8 flex flex-col gap-4 border-b lg:border-b-0 lg:border-r border-[#D2D2D7]">
+                <span className="self-start rounded-full bg-[#0071E3]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#0071E3]">
+                  Featured · New career
+                </span>
+                <h2 className="text-2xl font-bold text-[#1D1D1F] leading-tight">
+                  {course.title}
+                </h2>
+                <p className="text-sm text-[#6E6E73]">
+                  {course.description ?? "No description."}
+                </p>
+                <div className="flex items-center gap-3">
+                  <span
+                    className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    style={{
+                      backgroundColor: "rgba(22,45,74,0.08)",
+                      color: "#162D4A",
+                    }}
+                  >
+                    {course.ceu_hours} CEU
+                  </span>
+                  {owned ? (
+                    <span className="rounded-full bg-[#34C759]/15 px-2.5 py-0.5 text-xs font-medium text-[#0E7C2D]">
+                      Owned
+                    </span>
+                  ) : (
+                    <span className="text-xl font-semibold text-[#1D1D1F]">
+                      {priceLabel}
+                    </span>
+                  )}
+                </div>
+                {owned ? (
+                  <Link
+                    href={`/courses/${course.id}`}
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#0071E3] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#0077ED]"
+                  >
+                    Continue Learning →
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleBuy(course.id)}
+                    disabled={buying}
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#0071E3] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#0077ED] disabled:opacity-60"
+                  >
+                    {buying ? "Starting checkout…" : `Buy — ${priceLabel}`}
+                  </button>
+                )}
+              </div>
+              <div className="p-6 sm:p-8 bg-[#F5F5F7]">
+                <StateEligibilityChecker courseSlug={course.slug} />
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {filteredCourses.map((course) => {
