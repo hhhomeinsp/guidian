@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import {
   useCourses,
   useEnroll,
@@ -19,6 +20,7 @@ export default function CoursesPage() {
   const courses = useCourses();
   const enrollments = useMyEnrollments();
   const enroll = useEnroll();
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (
@@ -47,6 +49,17 @@ export default function CoursesPage() {
 
   const enrolledIds = new Set((enrollments.data ?? []).map((e) => e.course_id));
 
+  const filteredCourses = useMemo(() => {
+    const list = courses.data ?? [];
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) => {
+      const title = (c.title ?? "").toLowerCase();
+      const desc = (c.description ?? "").toLowerCase();
+      return title.includes(q) || desc.includes(q);
+    });
+  }, [courses.data, query]);
+
   return (
     <Shell>
       <div className="pb-4 border-b border-[#D2D2D7]">
@@ -54,20 +67,34 @@ export default function CoursesPage() {
       </div>
       <p className="text-[#6E6E73]">Enroll in a course to begin earning CEU hours.</p>
 
+      <div className="relative">
+        <Search
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6E6E73]"
+          aria-hidden="true"
+        />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search courses..."
+          aria-label="Search courses"
+          className="w-full bg-white border border-[#D2D2D7] rounded-xl pl-11 pr-4 py-3 text-[#1D1D1F] placeholder:text-[#6E6E73] focus:outline-none focus:border-[#0071E3]"
+        />
+      </div>
+
       {courses.isLoading && <p className="text-[#6E6E73]">Loading courses…</p>}
       {courses.error && (
         <p className="text-[#FF3B30]">Failed to load courses: {String(courses.error)}</p>
       )}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {(courses.data ?? []).map((course) => {
+        {filteredCourses.map((course) => {
           const enrolled = enrolledIds.has(course.id);
           const stageColor = getStageColor(course.stage ?? "ce");
           return (
             <div
               key={course.id}
-              className="flex flex-col rounded-[18px] bg-white overflow-hidden shadow-card"
-              
+              className="flex flex-col rounded-2xl bg-white overflow-hidden shadow-card"
             >
               <div className="flex flex-col flex-1 p-5 gap-4">
                 <div className="flex-1">
@@ -101,13 +128,13 @@ export default function CoursesPage() {
                 {enrolled ? (
                   <Link
                     href={`/courses/${course.id}`}
-                    className="inline-flex items-center justify-center rounded-[10px] bg-[#0071E3] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0077ED]"
+                    className="inline-flex items-center justify-center rounded-full bg-[#0071E3] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0077ED]"
                   >
                     Continue →
                   </Link>
                 ) : (
                   <Button
-                    className="w-full"
+                    className="w-full rounded-full"
                     onClick={() => enroll.mutate(course.id)}
                     disabled={enroll.isPending}
                   >
