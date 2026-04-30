@@ -418,6 +418,7 @@ function ContentSlide({
   totalSlides: number;
   onTap?: (e: React.MouseEvent) => void;
   hasAudio?: boolean;
+  onToggleAudio?: () => void;
   audioPlaying?: boolean;
   audioPct?: number;
   onAudioToggle?: () => void;
@@ -662,11 +663,9 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
         .then(r => r.json())
         .then(d => {
           if (d.url) {
-            // Put the lesson audio on all content slides (one continuous narration)
-            const totalSlides = (content.split(/\n(?=## )/).length + 2);
-            const urls: (string | null)[] = Array(Math.max(totalSlides, 25)).fill(null);
-            // Set on slide 1 (first content slide after title)
-            urls[1] = d.url;
+            // Set the same audio_url on ALL slides so it persists across navigation
+            const urls: (string | null)[] = Array(50).fill(d.url);
+            urls[0] = null; // Title slide - no audio bar
             setSlideAudioUrls(urls);
           }
         })
@@ -879,7 +878,7 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
                 hasAudio={currentSlideHasAudio}
                 audioPlaying={audioPlaying}
                 audioPct={audioPct}
-                onAudioToggle={toggleAudio}
+                onToggleAudio={toggleAudio}
               />
             )}
 
