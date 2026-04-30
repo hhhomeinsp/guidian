@@ -1,7 +1,9 @@
+from datetime import datetime, timezone
 from uuid import UUID
 import boto3
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from guidian.core.config import settings
 from guidian.db.session import get_db
-from guidian.models.models import Course, Lesson, Module, User, UserRole
+from guidian.models.models import Course, Lesson, LessonProgress, Module, User, UserRole
 from guidian.routers.deps import get_current_user, require_roles
 from guidian.schemas.course import (
     CourseCreate,
@@ -275,6 +277,119 @@ async def get_lesson_audio_url(
         ExpiresIn=3600,
     )
     return {"url": url}
+
+
+# --- Slide-level compliance progress ---
+
+
+class SlideProgressUpdate(BaseModel):
+    slide_index: int = Field(..., ge=0)
+    time_spent_ms: int = Field(..., ge=0)
+    total_slides: int = Field(..., ge=1)
+
+
+class SlideProgressRead(BaseModel):
+    slides_visited: list[int]
+    time_spent_ms: int
+    completed_at: datetime | None
+    completion_pct: float
+
+
+def _normalize_slides_visited(raw) -> list[int]:
+    if not raw:
+        return []
+    out: list[int] = []
+    for v in raw:
+        try:
+            out.append(int(v))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+@router.post("/lessons/{lesson_id}/progress", response_model=SlideProgressRead)
+async def record_slide_progress(
+    lesson_id: UUID,
+    body: SlideProgressUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    lesson = (await db.execute(select(Lesson).where(Lesson.id == lesson_id))).scalar_one_or_none()
+    if not lesson:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Lesson not found")
+
+    progress = (
+        await db.execute(
+            select(LessonProgress).where(
+                LessonProgress.user_id == user.id,
+                LessonProgress.lesson_id == lesson.id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if progress is None:
+        progress = LessonProgress(
+            user_id=user.id,
+            lesson_id=lesson.id,
+            slides_visited=[],
+            time_spent_ms=0,
+        )
+        db.add(progress)
+
+    visited = set(_normalize_slides_visited(progress.slides_visited))
+    if 0 <= body.slide_index < body.total_slides:
+        visited.add(body.slide_index)
+    progress.slides_visited = sorted(visited)
+
+    progress.time_spent_ms = int(progress.time_spent_ms or 0) + body.time_spent_ms
+
+    if len(visited) >= body.total_slides and progress.completed_at is None:
+        progress.completed_at = datetime.now(timezone.utc)
+
+    await db.commit()
+    await db.refresh(progress)
+
+    completion_pct = (
+        round(len(visited) / body.total_slides, 4) if body.total_slides > 0 else 0.0
+    )
+    return SlideProgressRead(
+        slides_visited=sorted(visited),
+        time_spent_ms=int(progress.time_spent_ms or 0),
+        completed_at=progress.completed_at,
+        completion_pct=min(completion_pct, 1.0),
+    )
+
+
+@router.get("/lessons/{lesson_id}/progress", response_model=SlideProgressRead)
+async def get_slide_progress(
+    lesson_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    progress = (
+        await db.execute(
+            select(LessonProgress).where(
+                LessonProgress.user_id == user.id,
+                LessonProgress.lesson_id == lesson_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if progress is None:
+        return SlideProgressRead(
+            slides_visited=[],
+            time_spent_ms=0,
+            completed_at=None,
+            completion_pct=0.0,
+        )
+
+    visited = sorted(set(_normalize_slides_visited(progress.slides_visited)))
+    return SlideProgressRead(
+        slides_visited=visited,
+        time_spent_ms=int(progress.time_spent_ms or 0),
+        completed_at=progress.completed_at,
+        completion_pct=0.0,
+    )
 
 
 @router.get("/lessons/{lesson_id}/slides/audio")

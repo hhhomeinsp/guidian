@@ -7,6 +7,7 @@ from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -153,6 +154,8 @@ class LessonProgress(Base, UUIDMixin, TimestampMixin):
     completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     behavioral_signals: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    slides_visited: Mapped[list] = mapped_column(JSONB, default=list, nullable=False, server_default="[]")
+    time_spent_ms: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False, server_default="0")
 
     __table_args__ = (UniqueConstraint("user_id", "lesson_id", name="uq_lesson_progress_user_lesson"),)
 

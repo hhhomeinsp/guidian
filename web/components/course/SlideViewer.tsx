@@ -9,6 +9,7 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
+  Lock,
   Play,
   Pause,
 } from "lucide-react";
@@ -17,6 +18,9 @@ import { cn } from "@/lib/utils";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+
+const MIN_SLIDE_FLOOR_MS = 10_000;
+const READING_WORDS_PER_SECOND = 3.3;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -738,17 +742,235 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
 
   const touchStartX = React.useRef<number>(0);
 
+  // ---------------------------------------------------------------------------
+  // Compliance timer — slide gating + visit tracking
+  // ---------------------------------------------------------------------------
+  const isTitleSlide = currentSlide === 0;
+  const isSummarySlide = currentSlide === totalSlides - 1;
+  const isContentSlide = !isTitleSlide && !isSummarySlide;
+  const contentSectionIndex = currentSlide - 1;
+
+  const currentBody =
+    isContentSlide && sections[contentSectionIndex]
+      ? sections[contentSectionIndex].body
+      : "";
+  const wordCount = React.useMemo(
+    () => currentBody.split(/\s+/).filter(Boolean).length,
+    [currentBody],
+  );
+
+  const [audioDurationMs, setAudioDurationMs] = React.useState(0);
+
+  // Capture audio duration once metadata loads for the active slide
+  React.useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const onMeta = () => {
+      const dur = a.duration;
+      setAudioDurationMs(Number.isFinite(dur) && dur > 0 ? dur * 1000 : 0);
+    };
+    a.addEventListener("loadedmetadata", onMeta);
+    a.addEventListener("durationchange", onMeta);
+    return () => {
+      a.removeEventListener("loadedmetadata", onMeta);
+      a.removeEventListener("durationchange", onMeta);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    setAudioDurationMs(0);
+  }, [currentSlide]);
+
+  const minSlideMs = React.useMemo(() => {
+    if (isTitleSlide || isSummarySlide) return 0;
+    const readingMs = (wordCount / READING_WORDS_PER_SECOND) * 1000;
+    return Math.max(audioDurationMs, readingMs, MIN_SLIDE_FLOOR_MS);
+  }, [isTitleSlide, isSummarySlide, audioDurationMs, wordCount]);
+
+  const [slideElapsedMs, setSlideElapsedMs] = React.useState(0);
+  const slideElapsedMsRef = React.useRef(0);
+  const lastTickAtRef = React.useRef<number>(Date.now());
+  const minSlideMsRef = React.useRef(0);
+  const totalSlidesRef = React.useRef(totalSlides);
+  const currentSlideRef = React.useRef(currentSlide);
+
+  React.useEffect(() => {
+    slideElapsedMsRef.current = slideElapsedMs;
+  }, [slideElapsedMs]);
+  React.useEffect(() => {
+    minSlideMsRef.current = minSlideMs;
+  }, [minSlideMs]);
+  React.useEffect(() => {
+    totalSlidesRef.current = totalSlides;
+  }, [totalSlides]);
+  React.useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
+
+  // Tick — accumulates only when tab is visible
+  React.useEffect(() => {
+    lastTickAtRef.current = Date.now();
+    const id = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        lastTickAtRef.current = Date.now();
+        return;
+      }
+      const now = Date.now();
+      const delta = now - lastTickAtRef.current;
+      lastTickAtRef.current = now;
+      if (delta > 0 && delta < 5_000) {
+        setSlideElapsedMs((prev) => prev + delta);
+      } else {
+        // Long delta = tab was inactive or system slept; ignore.
+      }
+    }, 250);
+    return () => clearInterval(id);
+  }, []);
+
+  // Reset accumulator when slide changes
+  React.useEffect(() => {
+    setSlideElapsedMs(0);
+    lastTickAtRef.current = Date.now();
+  }, [currentSlide]);
+
+  // Visibility — bring lastTick forward when returning so we don't backfill paused time
+  React.useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "visible") {
+        lastTickAtRef.current = Date.now();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  const slideTimeMet =
+    isTitleSlide || isSummarySlide || slideElapsedMs >= minSlideMs;
+
+  const remainingSec = Math.max(
+    0,
+    Math.ceil((minSlideMs - slideElapsedMs) / 1000),
+  );
+
+  // Visited slides — track locally and reflect server progress on initial load
+  const [slidesVisited, setSlidesVisited] = React.useState<number[]>([0]);
+
+  React.useEffect(() => {
+    setSlidesVisited((prev) =>
+      prev.includes(currentSlide) ? prev : [...prev, currentSlide].sort((a, b) => a - b),
+    );
+  }, [currentSlide]);
+
+  // Hydrate visited slides from the server on mount so refresh keeps progress
+  React.useEffect(() => {
+    let cancelled = false;
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("guidian.access_token") ?? ""
+        : "";
+    if (!token) return;
+    fetch(`${API_BASE_URL}/courses/lessons/${lessonId}/progress`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        if (Array.isArray(d.slides_visited) && d.slides_visited.length) {
+          setSlidesVisited((prev) => {
+            const merged = new Set<number>([...prev, ...d.slides_visited]);
+            return Array.from(merged).sort((a, b) => a - b);
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [lessonId]);
+
+  // Bank time + visit to server — uses refs so it works from beforeunload too
+  const bankProgress = React.useCallback(
+    (slideIdx: number, elapsedMs: number, opts?: { beacon?: boolean }) => {
+      if (slideIdx < 0 || slideIdx >= totalSlidesRef.current) return;
+      const isContent = slideIdx > 0 && slideIdx < totalSlidesRef.current - 1;
+      const cap = isContent
+        ? Math.max(minSlideMsRef.current * 2, MIN_SLIDE_FLOOR_MS * 2)
+        : 60_000;
+      const capped = Math.min(Math.max(0, Math.floor(elapsedMs)), cap);
+      const body = JSON.stringify({
+        slide_index: slideIdx,
+        time_spent_ms: capped,
+        total_slides: totalSlidesRef.current,
+      });
+      const url = `${API_BASE_URL}/courses/lessons/${lessonId}/progress`;
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("guidian.access_token") ?? ""
+          : "";
+      if (opts?.beacon && typeof navigator !== "undefined" && navigator.sendBeacon) {
+        const blob = new Blob([body], { type: "application/json" });
+        navigator.sendBeacon(url, blob);
+        return Promise.resolve();
+      }
+      return fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body,
+        keepalive: true,
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => {});
+    },
+    [lessonId],
+  );
+
+  const handleSummaryComplete = React.useCallback(() => {
+    // Final-bank the summary slide so the server records it as visited
+    // and (if all other slides are already visited) sets completed_at.
+    Promise.resolve(
+      bankProgress(currentSlideRef.current, slideElapsedMsRef.current),
+    ).finally(() => onComplete());
+  }, [bankProgress, onComplete]);
+
+  // Bank when the page is hidden or unloaded
+  React.useEffect(() => {
+    const flush = (beacon: boolean) => {
+      bankProgress(currentSlideRef.current, slideElapsedMsRef.current, { beacon });
+    };
+    const onUnload = () => flush(true);
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flush(true);
+    };
+    window.addEventListener("beforeunload", onUnload);
+    window.addEventListener("pagehide", onUnload);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+      window.removeEventListener("pagehide", onUnload);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [bankProgress]);
+
   const goTo = React.useCallback(
     (idx: number) => {
       const clamped = Math.max(0, Math.min(totalSlides - 1, idx));
+      if (clamped === currentSlide) return;
+      // Bank time spent on the current (about-to-leave) slide
+      bankProgress(currentSlide, slideElapsedMsRef.current);
       setDirection(clamped > currentSlide ? 1 : -1);
       setCurrentSlide(clamped);
       resetActivity();
     },
-    [currentSlide, totalSlides, resetActivity],
+    [currentSlide, totalSlides, resetActivity, bankProgress],
   );
 
-  const goNext = React.useCallback(() => goTo(currentSlide + 1), [currentSlide, goTo]);
+  const goNext = React.useCallback(() => {
+    if (!slideTimeMet) return;
+    goTo(currentSlide + 1);
+  }, [currentSlide, goTo, slideTimeMet]);
   const goPrev = React.useCallback(() => goTo(currentSlide - 1), [currentSlide, goTo]);
 
   // Update audio src when slide changes — stop previous, start new
@@ -791,12 +1013,9 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
     }
   };
 
-  const isTitleSlide = currentSlide === 0;
-  const isSummarySlide = currentSlide === totalSlides - 1;
-  const isContentSlide = !isTitleSlide && !isSummarySlide;
-
-  const contentSectionIndex = currentSlide - 1;
   const currentSlideHasAudio = Boolean(slideAudioUrls[currentSlide]);
+  const visitedCount = slidesVisited.length;
+  const allSlidesVisited = visitedCount >= totalSlides;
 
   return (
     <div
@@ -843,6 +1062,17 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
             <span className="rounded-full bg-[#F5F5F7] px-3 py-1 text-xs font-medium text-[#6E6E73]">
               {currentSlide + 1} / {totalSlides}
             </span>
+            <span
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium",
+                allSlidesVisited
+                  ? "bg-[#E8F5EE] text-[#0E7A4A]"
+                  : "bg-[#F5F5F7] text-[#6E6E73]",
+              )}
+              aria-label={`${visitedCount} of ${totalSlides} slides completed`}
+            >
+              {visitedCount} of {totalSlides} slides completed
+            </span>
           </div>
         )}
 
@@ -883,7 +1113,10 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
             )}
 
             {isSummarySlide && (
-              <SummarySlide objectives={lesson.objectives} onComplete={onComplete} />
+              <SummarySlide
+                objectives={lesson.objectives}
+                onComplete={handleSummaryComplete}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -905,20 +1138,37 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
           </button>
         )}
 
-        {/* Right arrow */}
+        {/* Right arrow / next button — gated by compliance timer on content slides */}
         {currentSlide < totalSlides - 1 && !isTitleSlide && (
           <button
-            aria-label="Next slide"
+            aria-label={
+              slideTimeMet
+                ? "Next slide"
+                : `Next slide unlocks in ${remainingSec} seconds`
+            }
             onClick={goNext}
+            disabled={!slideTimeMet}
+            aria-disabled={!slideTimeMet}
             className={cn(
-              "absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full p-2 transition-all",
-              "hidden md:flex",
-              "bg-white/70 text-[#1D1D1F] shadow-md backdrop-blur-sm",
-              "hover:bg-white hover:shadow-lg",
+              "absolute right-2 top-1/2 z-20 -translate-y-1/2 transition-all",
+              "hidden md:flex items-center gap-1.5",
+              "shadow-md backdrop-blur-sm",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              slideTimeMet
+                ? "rounded-full bg-white/70 p-2 text-[#1D1D1F] hover:bg-white hover:shadow-lg cursor-pointer"
+                : "rounded-full bg-[#F5F5F7] px-3 py-2 text-[#6E6E73] cursor-not-allowed opacity-90",
             )}
           >
-            <ChevronRight className="h-6 w-6" aria-hidden />
+            {slideTimeMet ? (
+              <ChevronRight className="h-6 w-6" aria-hidden />
+            ) : (
+              <>
+                <Lock className="h-3.5 w-3.5" aria-hidden />
+                <span className="text-xs font-medium tabular-nums">
+                  Next ({remainingSec}s)
+                </span>
+              </>
+            )}
           </button>
         )}
 
@@ -945,16 +1195,40 @@ export function SlideViewer({ lesson, lessonId, onComplete, onBack, className }:
           >
             <ChevronLeft className="h-4 w-4" aria-hidden /> Prev
           </button>
-          <span className="text-xs font-medium tracking-widest text-[#6E6E73] uppercase" aria-hidden>
-            {currentSlide + 1} / {totalSlides}
+          <span
+            className={cn(
+              "text-xs font-medium tracking-widest uppercase",
+              allSlidesVisited ? "text-[#0E7A4A]" : "text-[#6E6E73]",
+            )}
+            aria-label={`${visitedCount} of ${totalSlides} slides completed`}
+          >
+            {visitedCount}/{totalSlides}
           </span>
           <button
             onClick={goNext}
-            disabled={currentSlide >= totalSlides - 1}
-            aria-label="Next slide"
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-30 active:bg-primary/80"
+            disabled={currentSlide >= totalSlides - 1 || !slideTimeMet}
+            aria-label={
+              slideTimeMet
+                ? "Next slide"
+                : `Next slide unlocks in ${remainingSec} seconds`
+            }
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50",
+              slideTimeMet
+                ? "bg-primary text-primary-foreground active:bg-primary/80"
+                : "bg-[#F5F5F7] text-[#6E6E73]",
+            )}
           >
-            Next <ChevronRight className="h-4 w-4" aria-hidden />
+            {slideTimeMet ? (
+              <>
+                Next <ChevronRight className="h-4 w-4" aria-hidden />
+              </>
+            ) : (
+              <>
+                <Lock className="h-3 w-3" aria-hidden />
+                <span className="tabular-nums">Next ({remainingSec}s)</span>
+              </>
+            )}
           </button>
         </nav>
 

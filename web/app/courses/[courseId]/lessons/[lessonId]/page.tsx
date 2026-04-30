@@ -16,6 +16,39 @@ import type { LearningStyle } from "@/lib/api/schema";
 import { AdaptiveRenderer, LessonPage, Quiz, SlideViewer } from "@/components/course";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useNovaContext } from "@/components/NovaProvider";
+import { apiFetch } from "@/lib/api/client";
+import { Lock } from "lucide-react";
+
+
+function ComplianceToast({
+  message,
+  onDismiss,
+}: {
+  message: string | null;
+  onDismiss: () => void;
+}) {
+  if (!message) return null;
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2"
+    >
+      <div className="flex items-center gap-2 rounded-full bg-[#1D1D1F] px-4 py-2.5 text-sm font-medium text-white shadow-lg">
+        <Lock className="h-4 w-4" aria-hidden />
+        <span>{message}</span>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="ml-2 rounded-full px-2 py-0.5 text-xs text-[#F5F5F7] hover:bg-white/10"
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
 
 
 export default function LessonPlayerPage({
@@ -78,7 +111,36 @@ export default function LessonPlayerPage({
   const quizPassed = quizSummary.data?.passed ?? false;
   const canAdvance = !hasQuiz || quizPassed;
 
+  // Compliance gate — set when learner has not visited every slide / met seat time
+  const [gateMessage, setGateMessage] = useState<string | null>(null);
+
+  // Auto-dismiss the gate toast after 4s
+  useEffect(() => {
+    if (!gateMessage) return;
+    const id = window.setTimeout(() => setGateMessage(null), 4000);
+    return () => window.clearTimeout(id);
+  }, [gateMessage]);
+
+  const checkSlideCompliance = useCallback(async (): Promise<boolean> => {
+    try {
+      const progress = await apiFetch<{
+        slides_visited: number[];
+        time_spent_ms: number;
+        completed_at: string | null;
+        completion_pct: number;
+      }>(`/courses/lessons/${lessonId}/progress`);
+      return progress?.completed_at != null;
+    } catch {
+      return false;
+    }
+  }, [lessonId]);
+
   const handleComplete = async () => {
+    const compliant = await checkSlideCompliance();
+    if (!compliant) {
+      setGateMessage("Please complete all slides to continue");
+      return;
+    }
     try {
       if (canAdvance) {
         await updateProgress.mutateAsync({ completed: true });
@@ -112,9 +174,14 @@ export default function LessonPlayerPage({
           className="flex-1 min-h-0"
         lesson={lesson.data}
         lessonId={lessonId}
-        onComplete={() => {
+        onComplete={async () => {
           // If there's a quiz, drop into quiz mode. Otherwise complete and navigate.
           if (hasQuiz) {
+            const compliant = await checkSlideCompliance();
+            if (!compliant) {
+              setGateMessage("Please complete all slides to continue");
+              return;
+            }
             setShowSlides(false);
           } else {
             handleComplete();
@@ -126,6 +193,7 @@ export default function LessonPlayerPage({
             : undefined
         }
       />
+      <ComplianceToast message={gateMessage} onDismiss={() => setGateMessage(null)} />
       </div>
       </ErrorBoundary>
     );
@@ -135,6 +203,7 @@ export default function LessonPlayerPage({
   // --- Quiz / post-slides mode ---
   return (
     <>
+    <ComplianceToast message={gateMessage} onDismiss={() => setGateMessage(null)} />
     <LessonPage
       lesson={lesson.data}
       moduleTitle={current?.moduleTitle}
