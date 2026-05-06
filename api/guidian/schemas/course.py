@@ -80,6 +80,7 @@ class CourseUpdate(BaseModel):
     accrediting_body: str | None = None
     state_approvals: list[dict] | None = None
     ceu_rules: dict | None = None
+    status: Literal["draft", "generating", "published", "archived"] | None = None
 
 
 class CourseRead(BaseModel):
